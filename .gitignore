@@ -1,0 +1,13 @@
+# Backend source — not needed for GitHub Pages (Apps Script code is pasted
+# directly into the Apps Script editor, not deployed via this repo), and it
+# contains a hardcoded bank account number/IFSC/UPI as a fallback default
+# that has no business being in a public repo either way.
+Gscript.txt
+
+# Internal reference docs (architecture notes, a security audit that
+# describes exploit techniques even for already-fixed issues, migration
+# planning) — useful for continuing work in Claude Code, not for a public
+# GitHub Pages repo.
+HANDOFF.md
+SECURITY_AUDIT.md
+CLOUD_RUN_MIGRATION_PLAN.md
