@@ -2324,6 +2324,8 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('challan-view-modal')">Close</button>
       <button class="btn btn-success" onclick="printViewedChallan()">Print / PDF</button>
+      <button class="btn" onclick="sendChallanWhatsapp(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerPhone)">WhatsApp</button>
+      <button class="btn" onclick="sendChallanEmailToBuyer(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerEmail)">Email</button>
     </div>
   </div>
 </div>
@@ -5050,6 +5052,8 @@ function renderChallansTable(challans){
   document.getElementById('challans-body').innerHTML=[...challans].reverse().map(ch=>{
     let items=[];try{items=JSON.parse(ch['Items (JSON)']||'[]');}catch(e){}
     const no=escapeForInlineHandler(ch['Challan No']);
+    const phone=escapeForInlineHandler(ch['Buyer Phone']);
+    const email=escapeForInlineHandler(ch['Buyer Email']);
     return`<tr>
       <td style="font-weight:600;color:var(--accent)">${escapeHtml(ch['Challan No'])||'-'}</td>
       <td>${escapeHtml(ch['Buyer Name'])||'-'}</td>
@@ -5060,6 +5064,8 @@ function renderChallansTable(challans){
         <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="viewChallan('${no}')">View</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="editChallan('${no}')">Edit</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintChallan('${no}')">Reprint</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanWhatsapp('${no}','${phone}')">WhatsApp</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanEmailToBuyer('${no}','${email}')">Email</button>
       </td>
     </tr>`;
   }).join('');
@@ -5068,6 +5074,37 @@ function renderChallansTable(challans){
 function filterChallans(val){
   const q=val.toLowerCase();
   renderChallansTable(liveChallans.filter(c=>(c['Challan No']||'').toLowerCase().includes(q)||(c['Buyer Name']||'').toLowerCase().includes(q)));
+}
+
+// ── BUYER-FACING SEND — WhatsApp click-to-chat + direct email ────────────────
+// Mirrors sendInvoiceWhatsapp/sendInvoiceEmailToBuyer exactly — see those
+// for the fuller comment. Manual-trigger only, same as Invoice/Certificate;
+// never fires automatically on save.
+function sendChallanWhatsapp(challanNo, buyerPhone){
+  challanNo=String(challanNo||'').trim();
+  buyerPhone=String(buyerPhone||'');
+  if(!challanNo){ showToast('Challan number missing.','error'); return; }
+  const digits=buyerPhone.replace(/[^\d]/g,'');
+  if(!digits){ showToast('No buyer phone on file for this challan.','error'); return; }
+  showToast('Preparing challan PDF…');
+  gasPostAMC('getChallanWhatsappLink',{challanNo}).then(d=>{
+    if(!d.success){ showToast(d.message||'Could not prepare WhatsApp message.','error'); return; }
+    const waDigits=String(d.phone||buyerPhone||'').replace(/[^\d]/g,'');
+    const waPhone=waDigits.length===10?'91'+waDigits:waDigits;
+    const text=`Hi ${d.buyerName||''}, please find your delivery challan ${challanNo} here: ${d.pdfUrl}`;
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`,'_blank');
+  }).catch(()=>showToast('Failed to prepare WhatsApp message — check connection.','error'));
+}
+
+function sendChallanEmailToBuyer(challanNo, buyerEmail){
+  challanNo=String(challanNo||'').trim();
+  buyerEmail=String(buyerEmail||'').trim();
+  if(!challanNo){ showToast('Challan number missing.','error'); return; }
+  if(!buyerEmail){ showToast('No buyer email on file for this challan.','error'); return; }
+  showToast('Sending challan email…');
+  gasPostAMC('sendChallanToBuyer',{challanNo}).then(d=>{
+    showToast(d.message||(d.success?'Challan emailed.':'Email failed.'), d.success?'success':'error');
+  }).catch(()=>showToast('Failed to send email — check connection.','error'));
 }
 
 // ── PRINT CHALLAN ─────────────────────────────────────────────────────────────
@@ -5629,6 +5666,9 @@ function renderQuotationsTable(quotations){
   }
   document.getElementById('quotations-body').innerHTML=[...quotations].reverse().map(qt=>{
     let items=[];try{items=JSON.parse(qt['Items (JSON)']||'[]');}catch(e){}
+    const no=escapeForInlineHandler(qt['Quotation No']);
+    const phone=escapeForInlineHandler(qt['Buyer Phone']);
+    const email=escapeForInlineHandler(qt['Buyer Email']);
     return`<tr>
       <td style="font-weight:600;color:var(--accent)">${escapeHtml(qt['Quotation No'])||'-'}</td>
       <td>${escapeHtml(qt['Buyer Name'])||'-'}</td>
@@ -5636,7 +5676,11 @@ function renderQuotationsTable(quotations){
       <td class="hide-mobile">${fmtDate(qt['Valid Until'])}</td>
       <td style="font-weight:600;">₹${parseFloat(qt['Grand Total']||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
       <td class="hide-mobile" style="font-size:12px;">${items.length} item(s)</td>
-      <td><button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintQuotation('${escapeForInlineHandler(qt['Quotation No'])}')">Reprint</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintQuotation('${no}')">Reprint</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationWhatsapp('${no}','${phone}')">WhatsApp</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationEmailToBuyer('${no}','${email}')">Email</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -5644,6 +5688,36 @@ function renderQuotationsTable(quotations){
 function filterQuotations(val){
   const q=val.toLowerCase();
   renderQuotationsTable(liveQuotations.filter(qt=>(qt['Quotation No']||'').toLowerCase().includes(q)||(qt['Buyer Name']||'').toLowerCase().includes(q)));
+}
+
+// ── BUYER-FACING SEND — WhatsApp click-to-chat + direct email ────────────────
+// Mirrors sendInvoiceWhatsapp/sendInvoiceEmailToBuyer exactly. Manual-
+// trigger only; never fires automatically on save.
+function sendQuotationWhatsapp(quotNo, buyerPhone){
+  quotNo=String(quotNo||'').trim();
+  buyerPhone=String(buyerPhone||'');
+  if(!quotNo){ showToast('Quotation number missing.','error'); return; }
+  const digits=buyerPhone.replace(/[^\d]/g,'');
+  if(!digits){ showToast('No buyer phone on file for this quotation.','error'); return; }
+  showToast('Preparing quotation PDF…');
+  gasPostAMC('getQuotationWhatsappLink',{quotNo}).then(d=>{
+    if(!d.success){ showToast(d.message||'Could not prepare WhatsApp message.','error'); return; }
+    const waDigits=String(d.phone||buyerPhone||'').replace(/[^\d]/g,'');
+    const waPhone=waDigits.length===10?'91'+waDigits:waDigits;
+    const text=`Hi ${d.buyerName||''}, please find your quotation ${quotNo} here: ${d.pdfUrl}`;
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`,'_blank');
+  }).catch(()=>showToast('Failed to prepare WhatsApp message — check connection.','error'));
+}
+
+function sendQuotationEmailToBuyer(quotNo, buyerEmail){
+  quotNo=String(quotNo||'').trim();
+  buyerEmail=String(buyerEmail||'').trim();
+  if(!quotNo){ showToast('Quotation number missing.','error'); return; }
+  if(!buyerEmail){ showToast('No buyer email on file for this quotation.','error'); return; }
+  showToast('Sending quotation email…');
+  gasPostAMC('sendQuotationToBuyer',{quotNo}).then(d=>{
+    showToast(d.message||(d.success?'Quotation emailed.':'Email failed.'), d.success?'success':'error');
+  }).catch(()=>showToast('Failed to send email — check connection.','error'));
 }
 
 async function reprintQuotation(quotNo){
