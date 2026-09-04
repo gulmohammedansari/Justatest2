@@ -11,3 +11,14 @@ Gscript.txt
 HANDOFF.md
 SECURITY_AUDIT.md
 CLOUD_RUN_MIGRATION_PLAN.md
+
+# The Cloud Run backend-in-progress — this git repo/remote (Justatest2) is
+# the GitHub Pages FRONTEND repo specifically. The backend is a separate
+# codebase that will eventually get its own repo (or its own deploy path
+# straight to Cloud Run) and must never end up mixed into this one — it
+# will contain a real .env with real secrets once deployment starts, and
+# mixing it in here is exactly the kind of accident that already happened
+# once this session with a web-upload that included files it shouldn't
+# have. If backend/ ever needs its own git history, initialize that as its
+# own repository rather than un-ignoring it here.
+backend/
