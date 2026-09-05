@@ -941,6 +941,9 @@
       <button class="nav-item" onclick="navigate('reports')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports
       </button>
+      <button class="nav-item" onclick="navigate('deletionlog')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Deletion Log
+      </button>
     </div>
     <div class="nav-section">
       <div class="nav-label">Account</div>
@@ -1907,6 +1910,24 @@
     </div>
   </div>
 
+  <!-- DELETION LOG PAGE — who deleted which Invoice/Challan/Quotation/
+       Certificate and when. Admin-only on the backend (getDeletionLog);
+       a non-Admin who navigates here sees the backend's rejection message
+       in the table body instead of data, same as every other Admin-only
+       action in this app (no frontend role-hiding). -->
+  <div id="page-deletionlog" class="page page-hidden">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" placeholder="Search by document no, deleted by…" oninput="filterDeletionLog(this.value)"/>
+      </div>
+    </div>
+    <div class="card table-scroll-wrap">
+      <table><thead><tr><th>Document Type</th><th>Document No</th><th>Deleted By</th><th>Timestamp</th></tr></thead>
+      <tbody id="deletionlog-body"><tr><td colspan="4" class="loading-row">Loading…</td></tr></tbody></table>
+    </div>
+  </div>
+
   <!-- AMC CONTRACTS PAGE -->
   <div id="page-amc" class="page page-hidden">
     <!-- Renewal Summary Timeline -->
@@ -2309,6 +2330,7 @@
       <button class="btn" onclick="sendInvoiceWhatsapp(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo,_viewedInvoiceData&&_viewedInvoiceData.buyerPhone)">WhatsApp</button>
       <button class="btn" onclick="sendInvoiceEmailToBuyer(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo,_viewedInvoiceData&&_viewedInvoiceData.buyerEmail)">Email</button>
       <button class="btn btn-success" onclick="printViewedInvoice()">Print / PDF</button>
+      <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo)">Delete</button>
     </div>
   </div>
 </div>
@@ -2326,6 +2348,7 @@
       <button class="btn btn-success" onclick="printViewedChallan()">Print / PDF</button>
       <button class="btn" onclick="sendChallanWhatsapp(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerPhone)">WhatsApp</button>
       <button class="btn" onclick="sendChallanEmailToBuyer(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerEmail)">Email</button>
+      <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteChallan(_viewedChallanData&&_viewedChallanData.challanNo)">Delete</button>
     </div>
   </div>
 </div>
@@ -2802,7 +2825,7 @@ function navigate(page){
   const pg=document.getElementById('page-'+page);
   if(pg) pg.classList.remove('page-hidden');
 
-  const titles={dashboard:'Dashboard',invoices:'Invoices',challans:'Challans',quotations:'Quotations',creditnotes:'Credit/Debit Notes',certificates:'Certificates',amc:'AMC Contracts',payments:'Payments',ledger:'Ledger',customers:'Customers',items:'Products & Services',reports:'Reports',settings:'Settings'};
+  const titles={dashboard:'Dashboard',invoices:'Invoices',challans:'Challans',quotations:'Quotations',creditnotes:'Credit/Debit Notes',certificates:'Certificates',amc:'AMC Contracts',payments:'Payments',ledger:'Ledger',customers:'Customers',items:'Products & Services',reports:'Reports',deletionlog:'Deletion Log',settings:'Settings'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
 
   // Toggle topbar action buttons
@@ -2827,6 +2850,7 @@ function navigate(page){
   if(page==='amc')         loadAndRenderAMC();
   if(page==='customers')   loadAndRenderCustomers();
   if(page==='items')       loadAndRenderItems();
+  if(page==='deletionlog') loadAndRenderDeletionLog();
 }
 
 // ── NEW INVOICE PAGE ──────────────────────────────────────────────────────────
@@ -2962,6 +2986,7 @@ function renderInvoicesTable(data){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintInvoice('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendInvoiceWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendInvoiceEmailToBuyer('${no}','${email}')">Email</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice('${no}')">Delete</button>
       </td>
     </tr>`;}).join('');
 }
@@ -3798,6 +3823,26 @@ function sendInvoiceEmailToBuyer(invoiceNo, buyerEmail){
   gasPostAMC('sendInvoiceToBuyer',{invoiceNo}).then(d=>{
     showToast(d.message||(d.success?'Invoice emailed.':'Email failed.'), d.success?'success':'error');
   }).catch(()=>showToast('Failed to send email — check connection.','error'));
+}
+
+// ── DELETE — Admin-only on the backend; every deletion is logged (see the
+// new Deletion Log page). No frontend role-hiding, same established
+// pattern as deleteAMC/Company Settings — the backend rejects a non-Admin
+// attempt with a clear message shown via the toast below.
+function deleteInvoice(invoiceNo){
+  invoiceNo=String(invoiceNo||'').trim();
+  if(!invoiceNo){ showToast('Invoice number missing.','error'); return; }
+  if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.')) return;
+  gasPostAMC('deleteInvoice',{invoiceNo}).then(d=>{
+    if(d.success){
+      showToast('Invoice deleted.','error');
+      closeModal('invoice-view-modal');
+      loadAndRenderInvoices();
+      loadDashboard();
+    } else {
+      showToast(d.message||'Delete failed.','error');
+    }
+  }).catch(()=>showToast('Delete failed — check connection.','error'));
 }
 
 // ── EDIT INVOICE — loads a saved invoice into the New Invoice page for editing ─
@@ -5066,6 +5111,7 @@ function renderChallansTable(challans){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintChallan('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanEmailToBuyer('${no}','${email}')">Email</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteChallan('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -5105,6 +5151,22 @@ function sendChallanEmailToBuyer(challanNo, buyerEmail){
   gasPostAMC('sendChallanToBuyer',{challanNo}).then(d=>{
     showToast(d.message||(d.success?'Challan emailed.':'Email failed.'), d.success?'success':'error');
   }).catch(()=>showToast('Failed to send email — check connection.','error'));
+}
+
+// Admin-only on the backend, logged — see the comment above deleteInvoice.
+function deleteChallan(challanNo){
+  challanNo=String(challanNo||'').trim();
+  if(!challanNo){ showToast('Challan number missing.','error'); return; }
+  if(!confirm('Delete challan '+challanNo+'? This cannot be undone.')) return;
+  gasPostAMC('deleteChallan',{challanNo}).then(d=>{
+    if(d.success){
+      showToast('Challan deleted.','error');
+      closeModal('challan-view-modal');
+      loadAndRenderChallans();
+    } else {
+      showToast(d.message||'Delete failed.','error');
+    }
+  }).catch(()=>showToast('Delete failed — check connection.','error'));
 }
 
 // ── PRINT CHALLAN ─────────────────────────────────────────────────────────────
@@ -5680,6 +5742,7 @@ function renderQuotationsTable(quotations){
         <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintQuotation('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationEmailToBuyer('${no}','${email}')">Email</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteQuotation('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -5718,6 +5781,21 @@ function sendQuotationEmailToBuyer(quotNo, buyerEmail){
   gasPostAMC('sendQuotationToBuyer',{quotNo}).then(d=>{
     showToast(d.message||(d.success?'Quotation emailed.':'Email failed.'), d.success?'success':'error');
   }).catch(()=>showToast('Failed to send email — check connection.','error'));
+}
+
+// Admin-only on the backend, logged — see the comment above deleteInvoice.
+function deleteQuotation(quotNo){
+  quotNo=String(quotNo||'').trim();
+  if(!quotNo){ showToast('Quotation number missing.','error'); return; }
+  if(!confirm('Delete quotation '+quotNo+'? This cannot be undone.')) return;
+  gasPostAMC('deleteQuotation',{quotNo}).then(d=>{
+    if(d.success){
+      showToast('Quotation deleted.','error');
+      loadAndRenderQuotations();
+    } else {
+      showToast(d.message||'Delete failed.','error');
+    }
+  }).catch(()=>showToast('Delete failed — check connection.','error'));
 }
 
 async function reprintQuotation(quotNo){
@@ -7049,6 +7127,7 @@ function renderCertificatesTable(certs){
         <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintCertificate('${no}')">Print</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateEmailToBuyer('${no}','${email}')">Email</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteCertificate('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -7084,9 +7163,67 @@ function sendCertificateEmailToBuyer(certNo, recipientEmail){
   }).catch(()=>showToast('Failed to send email — check connection.','error'));
 }
 
+// Admin-only on the backend, logged — see the comment above deleteInvoice.
+function deleteCertificate(certNo){
+  certNo=String(certNo||'').trim();
+  if(!certNo){ showToast('Certificate number missing.','error'); return; }
+  if(!confirm('Delete certificate '+certNo+'? This cannot be undone.')) return;
+  gasPostAMC('deleteCertificate',{certNo}).then(d=>{
+    if(d.success){
+      showToast('Certificate deleted.','error');
+      loadAndRenderCertificates();
+    } else {
+      showToast(d.message||'Delete failed.','error');
+    }
+  }).catch(()=>showToast('Delete failed — check connection.','error'));
+}
+
 function filterCertificates(val){
   const q=val.toLowerCase();
   renderCertificatesTable(liveCertificates.filter(c=>(c['Cert No']||'').toLowerCase().includes(q)||(c['Recipient Name']||'').toLowerCase().includes(q)||(c['Cert Type']||'').toLowerCase().includes(q)));
+}
+
+// ── DELETION LOG (read-only) — who deleted which Invoice/Challan/
+// Quotation/Certificate and when. getDeletionLog is Admin-only on the
+// backend; a non-Admin viewing this page gets the backend's rejection
+// message rendered into the table body below, same pattern as every
+// other Admin-only action in this app.
+let liveDeletionLog=[];
+async function loadAndRenderDeletionLog(){
+  const token=sessionStorage.getItem('gme_token')||'';
+  document.getElementById('deletionlog-body').innerHTML='<tr><td colspan="4" class="loading-row">Loading…</td></tr>';
+  try{
+    const res=await fetch(`${googleScriptUrl}?action=getDeletionLog&token=${encodeURIComponent(token)}`);
+    const data=await res.json();
+    if(data.sessionExpired){doLogout();return;}
+    if(!data.success){
+      document.getElementById('deletionlog-body').innerHTML=`<tr><td colspan="4" class="loading-row">${escapeHtml(data.message||'Could not load deletion log.')}</td></tr>`;
+      return;
+    }
+    liveDeletionLog=data.log||[];
+    renderDeletionLogTable(liveDeletionLog);
+  }catch(e){
+    document.getElementById('deletionlog-body').innerHTML='<tr><td colspan="4" class="loading-row">Failed to load. Check connection.</td></tr>';
+  }
+}
+
+function renderDeletionLogTable(log){
+  if(!log.length){
+    document.getElementById('deletionlog-body').innerHTML='<tr><td colspan="4"><div class="empty-state" style="padding:30px;"><h3>No deletions yet</h3><p>Invoice, Challan, Quotation and Certificate deletions will be recorded here.</p></div></td></tr>';
+    return;
+  }
+  document.getElementById('deletionlog-body').innerHTML=log.map(l=>`
+    <tr>
+      <td>${escapeHtml(l['Document Type'])||'-'}</td>
+      <td style="font-weight:600;color:var(--accent)">${escapeHtml(l['Document No'])||'-'}</td>
+      <td>${escapeHtml(l['Deleted By'])||'-'}</td>
+      <td style="font-size:12px;color:var(--text3);">${escapeHtml(l['Timestamp'])||'-'}</td>
+    </tr>`).join('');
+}
+
+function filterDeletionLog(val){
+  const q=val.toLowerCase();
+  renderDeletionLogTable(liveDeletionLog.filter(l=>(l['Document No']||'').toLowerCase().includes(q)||(l['Deleted By']||'').toLowerCase().includes(q)));
 }
 
 // ── PRINT CERTIFICATE ─────────────────────────────────────────────────────────
