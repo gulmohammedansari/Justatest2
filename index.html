@@ -4554,8 +4554,11 @@ var LedgerPrint = (function () {
     // .inv-bank both overflow:hidden, "Authorised signatory" got clipped.
     var sigStampHtml = '';
     if (inv.seller.stamp && inv.seller.signature) {
+      // max-width widened from 11mm to 20mm — matches the backend
+      // ledgerPrint.js port exactly (must stay in sync, see that file's
+      // comment for why only width changed, never max-height).
       sigStampHtml = '<div style="position:relative;width:26mm;height:11mm;">' +
-        '<img src="' + inv.seller.stamp + '" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:11mm;max-width:11mm;z-index:1;">' +
+        '<img src="' + inv.seller.stamp + '" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:11mm;max-width:20mm;z-index:1;">' +
         '<img src="' + inv.seller.signature + '" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:9mm;max-width:26mm;z-index:2;">' +
         '</div>';
     } else if (inv.seller.stamp || inv.seller.signature) {
@@ -7563,8 +7566,11 @@ function printCertificateHtml(data){
   // of the two, it falls back to showing that one on its own (signature
   // above the line, or the stamp stays in its separate seal circle below).
   const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+    // max-width widened from 16mm to 28mm — matches the backend
+    // certificateHtml.js port exactly (must stay in sync); only width
+    // changed, max-height stays at 16mm.
     ? `<div style="position:relative;width:40mm;height:16mm;margin:0 auto;">
-         <img src="${COMPANY.stamp}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:16mm;max-width:16mm;">
+         <img src="${COMPANY.stamp}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:16mm;max-width:28mm;">
          <img src="${COMPANY.signature}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:12mm;max-width:40mm;">
        </div>`
     : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
