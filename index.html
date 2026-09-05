@@ -1293,7 +1293,7 @@
       <button class="btn" onclick="closeNewQuotationPage()" style="padding:6px 12px;">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>Back
       </button>
-      <span style="font-size:15px;font-weight:600;">New Quotation</span>
+      <span id="quotation-page-title" style="font-size:15px;font-weight:600;">New Quotation</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span id="quot-save-status" style="font-size:12px;color:var(--text3);font-weight:500;">● Unsaved</span>
@@ -1303,7 +1303,7 @@
       </button>
       <button class="btn btn-success" id="quot-save-btn" onclick="handleSaveQuotation()" style="padding:6px 14px;font-size:12px;font-weight:700;">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save Quotation
+        <span id="quot-save-btn-label">Save Quotation</span>
       </button>
       <button class="btn" onclick="handlePrintQuotation()" style="padding:6px 14px;font-size:12px;">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -5363,7 +5363,7 @@ let quotState = {
   quotNo:'', date:new Date().toISOString().split('T')[0],
   validUntil:'', refNo:'', notes:'',
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
-  lineItems:[], isSaved:false, buyerSearchTimeout:null
+  lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
 };
 let liveQuotations=[];
 
@@ -5377,9 +5377,11 @@ function openNewQuotationPage(){
     quotNo:'', date:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', notes:'',
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
-    lineItems:[], isSaved:false, buyerSearchTimeout:null
+    lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
   };
   const ss=document.getElementById('quot-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
+  const qtitle=document.getElementById('quotation-page-title');if(qtitle)qtitle.textContent='New Quotation';
+  const qlbl=document.getElementById('quot-save-btn-label');if(qlbl)qlbl.textContent='Save Quotation';
 
   ['qt-no','qt-ref-no','qt-buyer-name','qt-buyer-address','qt-buyer-gstin','qt-buyer-phone','qt-buyer-email','qt-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('qt-date').value=quotState.date;
@@ -5569,13 +5571,15 @@ async function handleSaveQuotBuyer(){
 
 // ── SAVE QUOTATION → GAS ──────────────────────────────────────────────────────
 async function handleSaveQuotation(){
+  if(quotState.editMode){ return handleUpdateQuotationToSheets(); }
   const quotNo=document.getElementById('qt-no').value.trim();
   if(!quotNo){showToast('Quotation No. is required.','error');return;}
   if(!quotState.buyer.name.trim()){showToast('Customer name is required.','error');return;}
   if(!quotState.lineItems.length){showToast('Add at least one item.','error');return;}
 
   const btn=document.getElementById('quot-save-btn');
-  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  const lbl=document.getElementById('quot-save-btn-label');
+  if(btn)btn.disabled=true; if(lbl)lbl.textContent='Saving…';
 
   const subTotal=quotState.lineItems.reduce((s,i)=>s+(i.amount||0),0);
   let taxTotal=0;
@@ -5625,7 +5629,143 @@ async function handleSaveQuotation(){
       showToast('Error: '+(result.message||'Unknown response'),'error');
     }
   }catch(err){showToast('Database connection failed.','error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Save Quotation';}}
+  finally{if(btn)btn.disabled=false; if(lbl)lbl.textContent='Save Quotation';}
+}
+
+// ── UPDATE EXISTING QUOTATION (GAS) — overwrites the original Sheets row ─────
+// Admin-only on the backend (see updateQuotation in ADMIN_ONLY_ACTIONS,
+// backend/src/index.js) — a post-migration addition, quotations were
+// reprint-only in Gscript.txt. Mirrors handleUpdateChallanToSheets exactly.
+async function handleUpdateQuotationToSheets(){
+  const quotNo=document.getElementById('qt-no').value.trim();
+  if(!quotNo){showToast('Quotation No. is required.','error');return;}
+  if(!quotState.buyer.name.trim()){showToast('Customer name is required.','error');return;}
+  if(!quotState.lineItems.length){showToast('Add at least one item.','error');return;}
+
+  const btn=document.getElementById('quot-save-btn');
+  const lbl=document.getElementById('quot-save-btn-label');
+  if(btn)btn.disabled=true; if(lbl)lbl.textContent='Updating…';
+
+  const subTotal=quotState.lineItems.reduce((s,i)=>s+(i.amount||0),0);
+  let taxTotal=0;
+  quotState.lineItems.forEach(i=>{taxTotal+=(i.amount||0)*(parseFloat(i.gstPct)||0)/100;});
+  const grandTotal=subTotal+taxTotal;
+
+  const cleanItems=quotState.lineItems.map(item=>({
+    desc:item.desc||'', hsn:item.hsn||'',
+    qty:parseFloat(item.qty)||0, unit:item.unit||'Nos',
+    rate:parseFloat(item.rate)||0, gstPct:parseFloat(item.gstPct)||0,
+    amount:parseFloat(item.amount)||0
+  }));
+
+  const payload={
+    action:'updateQuotation',
+    token:sessionStorage.getItem('gme_token')||'',
+    username:sessionStorage.getItem('gme_username')||'Unknown',
+    originalQuotNo:quotState.originalQuotNo,
+    quotNo,
+    date:document.getElementById('qt-date').value||'',
+    validUntil:document.getElementById('qt-valid-until').value||'',
+    refNo:document.getElementById('qt-ref-no').value.trim()||'',
+    notes:document.getElementById('qt-notes').value.trim()||'',
+    buyerName:quotState.buyer.name,
+    buyerPhone:quotState.buyer.phone||'',
+    buyerEmail:quotState.buyer.email||'',
+    buyerAddress:quotState.buyer.address||'',
+    buyerGstin:quotState.buyer.gstin||'',
+    buyerState:quotState.buyer.state||'Maharashtra',
+    subTotal:subTotal.toFixed(2),
+    taxTotal:taxTotal.toFixed(2),
+    grandTotal:grandTotal.toFixed(2),
+    itemsJson:JSON.stringify(cleanItems)
+  };
+
+  try{
+    const res=await fetch(googleScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    const result=await res.json();
+    if(result.sessionExpired){doLogout();return;}
+    if(result.success===false){
+      showToast(result.message||'Could not update quotation.','error');
+    }else{
+      quotState.isSaved=true;
+      quotState.originalQuotNo=quotNo;
+      const ss=document.getElementById('quot-save-status');
+      if(ss){ss.textContent='✓ Updated';ss.style.color='var(--success)';}
+      showToast('Quotation updated in Google Sheets.','success');
+    }
+  }catch(err){showToast('Database connection failed.','error');}
+  finally{if(btn)btn.disabled=false; if(lbl)lbl.textContent='Update Quotation';}
+}
+
+// Admin-only on the backend — see updateQuotation's comment above. Loads
+// an already-saved quotation into the New Quotation page for editing,
+// mirroring editChallan exactly.
+async function editQuotation(quotNo){
+  showToast('Loading quotation for edit…');
+  const token=sessionStorage.getItem('gme_token')||'';
+  try{
+    const res=await fetch(`${googleScriptUrl}?action=getQuotationsData&token=${encodeURIComponent(token)}`);
+    const data=await res.json();
+    if(data.sessionExpired){doLogout();return;}
+    const qt=(data.quotations||[]).find(q=>(q['Quotation No']||'').toString().trim()===quotNo.trim());
+    if(!qt){showToast('Quotation not found.','error');return;}
+    let items=[];try{items=JSON.parse(qt['Items (JSON)']||'[]');}catch(e){}
+
+    document.getElementById('main-topbar').style.display='none';
+    const nhdr=document.getElementById('inv-page-header');if(nhdr)nhdr.style.display='none';
+    const chdr=document.getElementById('challan-page-header');if(chdr)chdr.style.display='none';
+    const cnhdr5=document.getElementById('creditnote-page-header');if(cnhdr5)cnhdr5.style.display='none';
+    const certhdr5=document.getElementById('certificate-page-header');if(certhdr5)certhdr5.style.display='none';
+    document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
+
+    quotState={
+      quotNo:qt['Quotation No']||'', date:toDateInputValue(qt['Date']),
+      validUntil:qt['Valid Until']?toDateInputValue(qt['Valid Until']):'',
+      refNo:qt['Ref No']||'', notes:qt['Notes']||'',
+      buyer:{name:qt['Buyer Name']||'',address:qt['Buyer Address']||'',gstin:qt['Buyer GSTIN']||'',state:qt['Buyer State']||'Maharashtra',phone:qt['Buyer Phone']||'',email:qt['Buyer Email']||''},
+      lineItems:[], isSaved:true, buyerSearchTimeout:null,
+      editMode:true, originalQuotNo:qt['Quotation No']||''
+    };
+
+    document.getElementById('qt-no').value=quotState.quotNo;
+    document.getElementById('qt-date').value=quotState.date;
+    document.getElementById('qt-valid-until').value=quotState.validUntil;
+    document.getElementById('qt-ref-no').value=quotState.refNo;
+    document.getElementById('qt-buyer-name').value=quotState.buyer.name;
+    document.getElementById('qt-buyer-address').value=quotState.buyer.address;
+    document.getElementById('qt-buyer-gstin').value=quotState.buyer.gstin;
+    document.getElementById('qt-buyer-state').value=quotState.buyer.state;
+    document.getElementById('qt-buyer-phone').value=quotState.buyer.phone;
+    document.getElementById('qt-buyer-email').value=quotState.buyer.email;
+    document.getElementById('qt-notes').value=quotState.notes;
+    document.getElementById('qt-buyer-dropdown').style.display='none';
+    document.getElementById('quot-items').innerHTML='';
+    document.getElementById('qt-no-status').textContent='';
+
+    items.forEach(it=>{
+      addQuotItem();
+      const last=quotState.lineItems[quotState.lineItems.length-1];
+      last.desc=it.desc||''; last.hsn=it.hsn||''; last.qty=parseFloat(it.qty)||0;
+      last.unit=it.unit||'Nos'; last.rate=parseFloat(it.rate)||0; last.gstPct=parseFloat(it.gstPct)||0;
+      const dEl=document.querySelector('.qi-desc-'+last.id); if(dEl)dEl.value=last.desc;
+      const hEl=document.querySelector('.qi-hsn-'+last.id); if(hEl)hEl.value=last.hsn;
+      const qEl=document.querySelector('.qi-qty-'+last.id); if(qEl)qEl.value=last.qty;
+      const uEl=document.querySelector('.qi-unit-'+last.id); if(uEl)uEl.value=last.unit;
+      const rEl=document.querySelector('.qi-rate-'+last.id); if(rEl)rEl.value=last.rate;
+      const gEl=document.querySelector('.qi-gst-'+last.id); if(gEl)gEl.value=last.gstPct;
+      recalcQtLine(last.id);
+    });
+    if(!items.length) addQuotItem();
+    recalcQuot();
+
+    const titleEl=document.getElementById('quotation-page-title'); if(titleEl)titleEl.textContent='Edit Quotation — '+quotState.quotNo;
+    const lbl2=document.getElementById('quot-save-btn-label'); if(lbl2)lbl2.textContent='Update Quotation';
+    const ss2=document.getElementById('quot-save-status'); if(ss2){ss2.textContent='✎ Editing saved quotation';ss2.style.color='var(--text3)';}
+
+    document.getElementById('quotation-page-header').style.display='flex';
+    document.getElementById('page-new-quotation').classList.remove('page-hidden');
+    showToast('Quotation loaded — make changes and click Update.','success');
+  }catch(e){showToast('Failed to load quotation for edit.','error');}
 }
 
 // ── PREVIEW QUOTATION (no save required) ─────────────────────────────────────
@@ -5739,7 +5879,8 @@ function renderQuotationsTable(quotations){
       <td style="font-weight:600;">₹${parseFloat(qt['Grand Total']||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
       <td class="hide-mobile" style="font-size:12px;">${items.length} item(s)</td>
       <td style="white-space:nowrap;">
-        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintQuotation('${no}')">Reprint</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="editQuotation('${no}')">Edit</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintQuotation('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationEmailToBuyer('${no}','${email}')">Email</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteQuotation('${no}')">Delete</button>
@@ -6858,7 +6999,7 @@ let certState = {
   validUntil:'', refNo:'', site:'', remarks:'',
   recipient:{name:'',address:'',phone:'',email:'',gstin:''},
   items:[],
-  isSaved:false, buyerSearchTimeout:null
+  isSaved:false, buyerSearchTimeout:null, editMode:false, originalCertNo:''
 };
 let liveCertificates=[];
 
@@ -6874,7 +7015,7 @@ function openNewCertificatePage(){
     validUntil:'', refNo:'', site:'', remarks:'',
     recipient:{name:'',address:'',phone:'',email:'',gstin:''},
     items:[],
-    isSaved:false, buyerSearchTimeout:null
+    isSaved:false, buyerSearchTimeout:null, editMode:false, originalCertNo:''
   };
   const ss=document.getElementById('cert-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const tl=document.getElementById('cert-page-title');if(tl)tl.textContent='New Certificate';
@@ -6943,10 +7084,10 @@ function addCertItem(){
   const tr=document.createElement('tr');
   tr.id='cti-'+id;
   tr.innerHTML=`
-    <td><input type="text" value="" placeholder="Describe the work / item…" style="width:100%;" oninput="updateCertItem(${id},'desc',this.value)"/></td>
-    <td><input type="number" value="1" min="0" style="width:100%;" oninput="updateCertItem(${id},'qty',this.value)"/></td>
-    <td><select style="width:100%;" onchange="updateCertItem(${id},'unit',this.value)"><option>Nos</option><option>Hrs</option><option>Pcs</option><option>Kg</option><option>Ltr</option><option>Box</option><option>Mtr</option><option>Set</option></select></td>
-    <td><input type="text" value="" placeholder="Remarks…" style="width:100%;" oninput="updateCertItem(${id},'remarks',this.value)"/></td>
+    <td><input type="text" value="" placeholder="Describe the work / item…" style="width:100%;" oninput="updateCertItem(${id},'desc',this.value)" class="cti-desc-${id}"/></td>
+    <td><input type="number" value="1" min="0" style="width:100%;" oninput="updateCertItem(${id},'qty',this.value)" class="cti-qty-${id}"/></td>
+    <td><select style="width:100%;" onchange="updateCertItem(${id},'unit',this.value)" class="cti-unit-${id}"><option>Nos</option><option>Hrs</option><option>Pcs</option><option>Kg</option><option>Ltr</option><option>Box</option><option>Mtr</option><option>Set</option></select></td>
+    <td><input type="text" value="" placeholder="Remarks…" style="width:100%;" oninput="updateCertItem(${id},'remarks',this.value)" class="cti-remarks-${id}"/></td>
     <td><button class="remove-row" onclick="removeCertItem(${id})">✕</button></td>`;
   document.getElementById('cert-items').appendChild(tr);
 }
@@ -7034,6 +7175,7 @@ async function handleSaveCertBuyer(){
 
 // ── SAVE CERTIFICATE → GAS ────────────────────────────────────────────────────
 async function handleSaveCertificate(){
+  if(certState.editMode){ return handleUpdateCertificateToSheets(); }
   const certNo=document.getElementById('cert-no').value.trim();
   if(!certNo){showToast('Certificate No. is required.','error');return;}
   if(!certState.recipient.name.trim()){showToast('Recipient name is required.','error');return;}
@@ -7084,6 +7226,128 @@ async function handleSaveCertificate(){
   finally{if(btn)btn.disabled=false; if(lbl)lbl.textContent='Save Certificate';}
 }
 
+// ── UPDATE EXISTING CERTIFICATE (GAS) — overwrites the original Sheets row ───
+// Admin-only on the backend (see updateCertificate in ADMIN_ONLY_ACTIONS,
+// backend/src/index.js) — a post-migration addition, no equivalent in
+// Gscript.txt. Mirrors handleUpdateChallanToSheets exactly.
+async function handleUpdateCertificateToSheets(){
+  const certNo=document.getElementById('cert-no').value.trim();
+  if(!certNo){showToast('Certificate No. is required.','error');return;}
+  if(!certState.recipient.name.trim()){showToast('Recipient name is required.','error');return;}
+  if(!certState.items.length||!certState.items.some(i=>(i.desc||'').trim())){showToast('Please add at least one item / scope of work.','error');return;}
+
+  const btn=document.getElementById('cert-save-btn');
+  const lbl=document.getElementById('cert-save-btn-label');
+  if(btn)btn.disabled=true; if(lbl)lbl.textContent='Updating…';
+
+  const cleanItems=certState.items.filter(i=>(i.desc||'').trim()).map(item=>({
+    desc:item.desc||'', qty:parseFloat(item.qty)||0, unit:item.unit||'Nos', remarks:item.remarks||''
+  }));
+
+  const payload={
+    action:'updateCertificate',
+    token:sessionStorage.getItem('gme_token')||'',
+    username:sessionStorage.getItem('gme_username')||'Unknown',
+    originalCertNo:certState.originalCertNo,
+    certNo,
+    certType:document.getElementById('cert-type').value,
+    issueDate:document.getElementById('cert-issue-date').value||'',
+    validUntil:document.getElementById('cert-valid-until').value||'',
+    refNo:document.getElementById('cert-ref-no').value.trim()||'',
+    site:document.getElementById('cert-site').value.trim()||'',
+    itemsJson:JSON.stringify(cleanItems),
+    remarks:document.getElementById('cert-remarks').value.trim()||'',
+    recipientName:certState.recipient.name,
+    recipientAddress:certState.recipient.address||'',
+    recipientPhone:certState.recipient.phone||'',
+    recipientEmail:certState.recipient.email||'',
+    recipientGstin:certState.recipient.gstin||''
+  };
+
+  try{
+    const res=await fetch(googleScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    const result=await res.json();
+    if(result.sessionExpired){doLogout();return;}
+    if(result.success===false){
+      showToast(result.message||'Could not update certificate.','error');
+    }else{
+      certState.isSaved=true;
+      certState.originalCertNo=certNo;
+      const ss=document.getElementById('cert-save-status');
+      if(ss){ss.textContent='✓ Updated';ss.style.color='var(--success)';}
+      showToast('Certificate updated in Google Sheets.','success');
+    }
+  }catch(err){showToast('Database connection failed.','error');}
+  finally{if(btn)btn.disabled=false; if(lbl)lbl.textContent='Update Certificate';}
+}
+
+// Admin-only on the backend — see updateCertificate's comment above. Loads
+// an already-saved certificate into the New Certificate page for editing,
+// mirroring editChallan exactly.
+async function editCertificate(certNo){
+  showToast('Loading certificate for edit…');
+  const token=sessionStorage.getItem('gme_token')||'';
+  try{
+    const res=await fetch(`${googleScriptUrl}?action=getCertificates&token=${encodeURIComponent(token)}`);
+    const data=await res.json();
+    if(data.sessionExpired){doLogout();return;}
+    const c=(data.certificates||[]).find(x=>(x['Cert No']||'').toString().trim()===certNo.trim());
+    if(!c){showToast('Certificate not found.','error');return;}
+    let items=[];try{items=JSON.parse(c['Items (JSON)']||'[]');}catch(e){}
+
+    document.getElementById('main-topbar').style.display='none';
+    ['inv-page-header','challan-page-header','quotation-page-header','creditnote-page-header'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
+
+    certState={
+      certNo:c['Cert No']||'', certType:c['Cert Type']||'Refilling',
+      issueDate:toDateInputValue(c['Issue Date']),
+      validUntil:c['Valid Until']?toDateInputValue(c['Valid Until']):'',
+      refNo:c['Ref No']||'', site:c['Site']||'', remarks:c['Remarks']||'',
+      recipient:{name:c['Recipient Name']||'',address:c['Recipient Address']||'',phone:c['Recipient Phone']||'',email:c['Recipient Email']||'',gstin:c['Recipient GSTIN']||''},
+      items:[],
+      isSaved:true, buyerSearchTimeout:null,
+      editMode:true, originalCertNo:c['Cert No']||''
+    };
+
+    document.getElementById('cert-no').value=certState.certNo;
+    document.getElementById('cert-type').value=certState.certType;
+    document.getElementById('cert-issue-date').value=certState.issueDate;
+    document.getElementById('cert-valid-until').value=certState.validUntil;
+    document.getElementById('cert-ref-no').value=certState.refNo;
+    document.getElementById('cert-site').value=certState.site;
+    document.getElementById('cert-remarks').value=certState.remarks;
+    document.getElementById('cert-recipient-name').value=certState.recipient.name;
+    document.getElementById('cert-recipient-address').value=certState.recipient.address;
+    document.getElementById('cert-recipient-phone').value=certState.recipient.phone;
+    document.getElementById('cert-recipient-email').value=certState.recipient.email;
+    document.getElementById('cert-recipient-gstin').value=certState.recipient.gstin;
+    document.getElementById('cert-recipient-dropdown').style.display='none';
+    document.getElementById('cert-items').innerHTML='';
+    document.getElementById('cert-no-status').textContent='';
+
+    items.forEach(it=>{
+      addCertItem();
+      const last=certState.items[certState.items.length-1];
+      last.desc=it.desc||''; last.qty=parseFloat(it.qty)||0;
+      last.unit=it.unit||'Nos'; last.remarks=it.remarks||'';
+      const dEl=document.querySelector('.cti-desc-'+last.id); if(dEl)dEl.value=last.desc;
+      const qEl=document.querySelector('.cti-qty-'+last.id); if(qEl)qEl.value=last.qty;
+      const uEl=document.querySelector('.cti-unit-'+last.id); if(uEl)uEl.value=last.unit;
+      const rEl=document.querySelector('.cti-remarks-'+last.id); if(rEl)rEl.value=last.remarks;
+    });
+    if(!items.length) addCertItem();
+
+    const titleEl=document.getElementById('cert-page-title'); if(titleEl)titleEl.textContent='Edit Certificate — '+certState.certNo;
+    const lbl2=document.getElementById('cert-save-btn-label'); if(lbl2)lbl2.textContent='Update Certificate';
+    const ss2=document.getElementById('cert-save-status'); if(ss2){ss2.textContent='✎ Editing saved certificate';ss2.style.color='var(--text3)';}
+
+    document.getElementById('certificate-page-header').style.display='flex';
+    document.getElementById('page-new-certificate').classList.remove('page-hidden');
+    showToast('Certificate loaded — make changes and click Update.','success');
+  }catch(e){showToast('Failed to load certificate for edit.','error');}
+}
+
 // ── LOAD & RENDER CERTIFICATES LIST ──────────────────────────────────────────
 async function loadAndRenderCertificates(){
   const token=sessionStorage.getItem('gme_token')||'';
@@ -7124,7 +7388,8 @@ function renderCertificatesTable(certs){
       <td class="hide-mobile">${c['Valid Until']?fmtDate(c['Valid Until']):'-'}</td>
       <td>${statusBadge}</td>
       <td style="white-space:nowrap;">
-        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="reprintCertificate('${no}')">Print</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="editCertificate('${no}')">Edit</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintCertificate('${no}')">Print</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateEmailToBuyer('${no}','${email}')">Email</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteCertificate('${no}')">Delete</button>
