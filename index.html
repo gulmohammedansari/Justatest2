@@ -7806,8 +7806,9 @@ function buildHorizonCertHtml(data){
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
 body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .hz-page{width:210mm;height:297mm;margin:0 auto;background:#fff;display:flex;flex-direction:column;box-sizing:border-box;border:5px solid #E2231A;position:relative;overflow:hidden;}
-.hz-corner-black{position:absolute;top:-5px;right:-5px;width:60mm;height:32mm;background:#141414;clip-path:polygon(100% 0,100% 100%,0 0);}
-.hz-corner-red{position:absolute;top:-5px;right:14mm;width:24mm;height:32mm;background:#E2231A;clip-path:polygon(100% 0,100% 100%,0 0);}
+.hz-corner{position:absolute;top:-5px;right:-5px;width:60mm;height:32mm;}
+.hz-corner-black{position:absolute;top:0;left:0;width:100%;height:100%;background:#141414;clip-path:polygon(100% 0,100% 100%,0 0);}
+.hz-corner-ribbon{position:absolute;left:-12.5mm;top:12mm;width:85mm;height:8mm;background:#E2231A;clip-path:polygon(0% 50%,18% 0%,100% 0%,100% 100%,18% 100%);transform:rotate(28.1deg);transform-origin:center;}
 .hz-body{flex:1;display:flex;flex-direction:column;padding:10mm 12mm 6mm;box-sizing:border-box;position:relative;}
 .hz-header{display:flex;align-items:center;gap:4mm;margin-bottom:4mm;}
 .hz-logo{flex:0 0 22mm;width:22mm;display:flex;align-items:center;justify-content:center;}
@@ -7834,7 +7835,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 .hz-footer-inner{position:relative;z-index:1;}
 </style></head><body>
 <div class="hz-page">
-  <div class="hz-corner-black"></div><div class="hz-corner-red"></div>
+  <div class="hz-corner"><div class="hz-corner-black"></div><div class="hz-corner-ribbon"></div></div>
   <div class="hz-body" style="${COMPANY.watermark?`background-image:url('${COMPANY.watermark}');background-repeat:no-repeat;background-position:center 55%;background-size:60% auto;`:''}">
 
     <div class="hz-header">
