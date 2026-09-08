@@ -1198,6 +1198,13 @@
               </select>
             </div>
             <div class="form-group">
+              <label>Print Format <span style="color:var(--danger);">*</span></label>
+              <select id="cert-format" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();">
+                <option value="default">Default</option>
+                <option value="horizon">Horizon Style</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>Issue Date <span style="color:var(--danger);">*</span></label>
               <input type="date" id="cert-issue-date" onchange="certState.issueDate=this.value;certState.isSaved=false;"/>
             </div>
@@ -1264,10 +1271,13 @@
         </div>
         <table class="items-table">
           <thead><tr>
-            <th style="width:44%;">Description of Work / Item</th>
-            <th style="width:10%;">Qty</th>
-            <th style="width:10%;">Unit</th>
-            <th style="width:31%;">Remarks</th>
+            <th style="width:30%;">Description of Work / Item</th>
+            <th class="cert-horizon-col" style="display:none;width:12%;">Year of Mfg</th>
+            <th style="width:8%;">Qty</th>
+            <th style="width:8%;">Unit</th>
+            <th class="cert-horizon-col" style="display:none;width:14%;">Refilling Due Date</th>
+            <th class="cert-horizon-col" style="display:none;width:10%;">Sr No.</th>
+            <th style="width:21%;">Remarks</th>
             <th style="width:5%;"></th>
           </tr></thead>
           <tbody id="cert-items"></tbody>
@@ -6997,7 +7007,7 @@ function loadDashboardAMC(){
 
 // ── CERTIFICATE STATE ────────────────────────────────────────────────────────
 let certState = {
-  certNo:'', certType:'Refilling',
+  certNo:'', certType:'Refilling', certFormat:'default',
   issueDate:new Date().toISOString().split('T')[0],
   validUntil:'', refNo:'', site:'', remarks:'',
   recipient:{name:'',address:'',phone:'',email:'',gstin:''},
@@ -7013,13 +7023,15 @@ function openNewCertificatePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   certState={
-    certNo:'', certType:'Refilling',
+    certNo:'', certType:'Refilling', certFormat:'default',
     issueDate:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', site:'', remarks:'',
     recipient:{name:'',address:'',phone:'',email:'',gstin:''},
     items:[],
     isSaved:false, buyerSearchTimeout:null, editMode:false, originalCertNo:''
   };
+  const fmtSel=document.getElementById('cert-format');if(fmtSel)fmtSel.value='default';
+  toggleCertFormatColumns();
   const ss=document.getElementById('cert-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const tl=document.getElementById('cert-page-title');if(tl)tl.textContent='New Certificate';
   const lbl=document.getElementById('cert-save-btn-label');if(lbl)lbl.textContent='Save Certificate';
@@ -7082,14 +7094,18 @@ async function fetchNextCertNo(){
 // ── CERTIFICATE LINE ITEMS ────────────────────────────────────────────────────
 function addCertItem(){
   const id=Date.now()*1000+(++__gmeItemIdSeq%1000);
-  certState.items.push({id,desc:'',qty:1,unit:'Nos',remarks:''});
+  certState.items.push({id,desc:'',qty:1,unit:'Nos',remarks:'',yearOfMfg:'',refillingDueDate:'',srNo:''});
   certState.isSaved=false;
+  const hz=certState.certFormat==='horizon'?'':'display:none;';
   const tr=document.createElement('tr');
   tr.id='cti-'+id;
   tr.innerHTML=`
     <td><input type="text" value="" placeholder="Describe the work / item…" style="width:100%;" oninput="updateCertItem(${id},'desc',this.value)" class="cti-desc-${id}"/></td>
+    <td class="cert-horizon-col" style="${hz}"><input type="text" value="" placeholder="2026" style="width:100%;" oninput="updateCertItem(${id},'yearOfMfg',this.value)" class="cti-yom-${id}"/></td>
     <td><input type="number" value="1" min="0" style="width:100%;" oninput="updateCertItem(${id},'qty',this.value)" class="cti-qty-${id}"/></td>
     <td><select style="width:100%;" onchange="updateCertItem(${id},'unit',this.value)" class="cti-unit-${id}"><option>Nos</option><option>Hrs</option><option>Pcs</option><option>Kg</option><option>Ltr</option><option>Box</option><option>Mtr</option><option>Set</option></select></td>
+    <td class="cert-horizon-col" style="${hz}"><input type="date" value="" style="width:100%;" oninput="updateCertItem(${id},'refillingDueDate',this.value)" class="cti-rdd-${id}"/></td>
+    <td class="cert-horizon-col" style="${hz}"><input type="text" value="" placeholder="Sr No…" style="width:100%;" oninput="updateCertItem(${id},'srNo',this.value)" class="cti-srno-${id}"/></td>
     <td><input type="text" value="" placeholder="Remarks…" style="width:100%;" oninput="updateCertItem(${id},'remarks',this.value)" class="cti-remarks-${id}"/></td>
     <td><button class="remove-row" onclick="removeCertItem(${id})">✕</button></td>`;
   document.getElementById('cert-items').appendChild(tr);
@@ -7099,6 +7115,15 @@ function updateCertItem(id,field,value){
   const item=certState.items.find(i=>i.id===id);if(!item)return;
   item[field]=(field==='qty')?(parseFloat(value)||0):value;
   certState.isSaved=false;
+}
+
+// Shows/hides the 3 Horizon-only item columns (Year of Mfg / Refilling Due
+// Date / Sr No) plus the format-specific header cells, based on the
+// currently selected Print Format — called on the format select's onchange
+// and once after loading a saved certificate for edit.
+function toggleCertFormatColumns(){
+  const show=certState.certFormat==='horizon';
+  document.querySelectorAll('.cert-horizon-col').forEach(el=>{el.style.display=show?'':'none';});
 }
 
 function removeCertItem(id){
@@ -7189,7 +7214,8 @@ async function handleSaveCertificate(){
   if(btn)btn.disabled=true; if(lbl)lbl.textContent='Saving…';
 
   const cleanItems=certState.items.filter(i=>(i.desc||'').trim()).map(item=>({
-    desc:item.desc||'', qty:parseFloat(item.qty)||0, unit:item.unit||'Nos', remarks:item.remarks||''
+    desc:item.desc||'', qty:parseFloat(item.qty)||0, unit:item.unit||'Nos', remarks:item.remarks||'',
+    yearOfMfg:item.yearOfMfg||'', refillingDueDate:item.refillingDueDate||'', srNo:item.srNo||''
   }));
 
   const payload={
@@ -7198,6 +7224,7 @@ async function handleSaveCertificate(){
     username:sessionStorage.getItem('gme_username')||'Unknown',
     certNo,
     certType:document.getElementById('cert-type').value,
+    certFormat:certState.certFormat||'default',
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7244,7 +7271,8 @@ async function handleUpdateCertificateToSheets(){
   if(btn)btn.disabled=true; if(lbl)lbl.textContent='Updating…';
 
   const cleanItems=certState.items.filter(i=>(i.desc||'').trim()).map(item=>({
-    desc:item.desc||'', qty:parseFloat(item.qty)||0, unit:item.unit||'Nos', remarks:item.remarks||''
+    desc:item.desc||'', qty:parseFloat(item.qty)||0, unit:item.unit||'Nos', remarks:item.remarks||'',
+    yearOfMfg:item.yearOfMfg||'', refillingDueDate:item.refillingDueDate||'', srNo:item.srNo||''
   }));
 
   const payload={
@@ -7254,6 +7282,7 @@ async function handleUpdateCertificateToSheets(){
     originalCertNo:certState.originalCertNo,
     certNo,
     certType:document.getElementById('cert-type').value,
+    certFormat:certState.certFormat||'default',
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7303,7 +7332,7 @@ async function editCertificate(certNo){
     document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
     certState={
-      certNo:c['Cert No']||'', certType:c['Cert Type']||'Refilling',
+      certNo:c['Cert No']||'', certType:c['Cert Type']||'Refilling', certFormat:c['Certificate Format']||'default',
       issueDate:toDateInputValue(c['Issue Date']),
       validUntil:c['Valid Until']?toDateInputValue(c['Valid Until']):'',
       refNo:c['Ref No']||'', site:c['Site']||'', remarks:c['Remarks']||'',
@@ -7315,6 +7344,7 @@ async function editCertificate(certNo){
 
     document.getElementById('cert-no').value=certState.certNo;
     document.getElementById('cert-type').value=certState.certType;
+    document.getElementById('cert-format').value=certState.certFormat;
     document.getElementById('cert-issue-date').value=certState.issueDate;
     document.getElementById('cert-valid-until').value=certState.validUntil;
     document.getElementById('cert-ref-no').value=certState.refNo;
@@ -7334,12 +7364,17 @@ async function editCertificate(certNo){
       const last=certState.items[certState.items.length-1];
       last.desc=it.desc||''; last.qty=parseFloat(it.qty)||0;
       last.unit=it.unit||'Nos'; last.remarks=it.remarks||'';
+      last.yearOfMfg=it.yearOfMfg||''; last.refillingDueDate=it.refillingDueDate||''; last.srNo=it.srNo||'';
       const dEl=document.querySelector('.cti-desc-'+last.id); if(dEl)dEl.value=last.desc;
       const qEl=document.querySelector('.cti-qty-'+last.id); if(qEl)qEl.value=last.qty;
       const uEl=document.querySelector('.cti-unit-'+last.id); if(uEl)uEl.value=last.unit;
       const rEl=document.querySelector('.cti-remarks-'+last.id); if(rEl)rEl.value=last.remarks;
+      const yEl=document.querySelector('.cti-yom-'+last.id); if(yEl)yEl.value=last.yearOfMfg;
+      const fEl=document.querySelector('.cti-rdd-'+last.id); if(fEl)fEl.value=last.refillingDueDate;
+      const sEl=document.querySelector('.cti-srno-'+last.id); if(sEl)sEl.value=last.srNo;
     });
     if(!items.length) addCertItem();
+    toggleCertFormatColumns();
 
     const titleEl=document.getElementById('cert-page-title'); if(titleEl)titleEl.textContent='Edit Certificate — '+certState.certNo;
     const lbl2=document.getElementById('cert-save-btn-label'); if(lbl2)lbl2.textContent='Update Certificate';
@@ -7383,10 +7418,12 @@ function renderCertificatesTable(certs){
       else if(diff<=30) statusBadge='<span class="badge expiring-soon">Expiring Soon</span>';
       else statusBadge='<span class="badge active-amc">Active</span>';
     }
+    const fmtBadge=(c['Certificate Format']||'default')==='horizon'
+      ?' <span class="badge" style="background:#E2231A;color:#fff;">Horizon</span>':'';
     return`<tr>
       <td style="font-weight:600;color:var(--accent)">${escapeHtml(c['Cert No'])||'-'}</td>
       <td>${escapeHtml(c['Recipient Name'])||'-'}</td>
-      <td class="hide-mobile">${escapeHtml(c['Cert Type'])||'-'}</td>
+      <td class="hide-mobile">${escapeHtml(c['Cert Type'])||'-'}${fmtBadge}</td>
       <td class="hide-mobile">${fmtDate(c['Issue Date'])}</td>
       <td class="hide-mobile">${c['Valid Until']?fmtDate(c['Valid Until']):'-'}</td>
       <td>${statusBadge}</td>
@@ -7500,6 +7537,7 @@ function handlePrintCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim(),
     certType:document.getElementById('cert-type').value,
+    certFormat:certState.certFormat||'default',
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -7518,6 +7556,7 @@ function handlePreviewCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim()||'PREVIEW',
     certType:document.getElementById('cert-type').value,
+    certFormat:certState.certFormat||'default',
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -7545,6 +7584,7 @@ async function reprintCertificate(certNo){
     try{items=JSON.parse(c['Items (JSON)']||'[]');}catch(e){items=[];}
     printCertificateHtml({
       certNo:c['Cert No'],certType:c['Cert Type']||'',
+      certFormat:c['Certificate Format']||'default',
       issueDate:c['Issue Date'],validUntil:c['Valid Until']||'',
       refNo:c['Ref No']||'',site:c['Site']||'',
       items:items,remarks:c['Remarks']||'',
@@ -7556,7 +7596,37 @@ async function reprintCertificate(certNo){
 }
 
 // ── CERTIFICATE PRINT ENGINE (A4 Portrait) ────────────────────────────────────
+// Dispatches to whichever template the certificate was saved with —
+// certFormat rides on `data` from every one of printCertificateHtml's
+// callers (handlePrintCertificate/handlePreviewCertificate/
+// reprintCertificate). Mirrors the backend's buildCertificateHtml
+// dispatcher in backend/src/lib/certificateHtml.js — must stay in sync.
 function printCertificateHtml(data){
+  const htmlContent = (data.certFormat==='horizon') ? buildHorizonCertHtml(data) : buildDefaultCertHtml(data);
+
+  const old=document.getElementById('_print_frame_cert');if(old)old.parentNode.removeChild(old);
+  const iframe=document.createElement('iframe');
+  iframe.id='_print_frame_cert';
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
+  // Signature/Stamp are Drive-hosted URLs needing an actual network fetch,
+  // unlike the rest of this self-contained document — a fixed delay isn't
+  // enough on a slower connection, so wait for every image to actually
+  // finish loading (same fix as the invoice/quotation print path).
+  document.body.appendChild(iframe);
+  const iDoc=iframe.contentDocument||iframe.contentWindow.document;
+  // document.write()/close() run synchronously — the DOM (incl. every <img>
+  // tag) already exists the instant close() returns, so there's no need to
+  // wait for an onload event at all. That's deliberate: appendChild() fires
+  // its OWN "load" for the initial blank frame, and depending on timing
+  // the write can fire a second one — an onload handler here runs twice,
+  // printing once too early (blank/no stamp-signature) and once correctly,
+  // which is exactly the double-print-dialog bug this replaces.
+  iDoc.open();iDoc.write(htmlContent);iDoc.close();
+  const iWin=iframe.contentWindow;
+  LedgerPrint.waitForImagesToLoad(iWin.document, 4000).then(()=>{ iWin.focus(); iWin.print(); });
+}
+
+function buildDefaultCertHtml(data){
   const fmtD=fmtDMY(data.issueDate);
   const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
 
@@ -7582,7 +7652,7 @@ function printCertificateHtml(data){
   const certItems=(data.items&&data.items.length?data.items:[]);
   const hasItemRemarks=certItems.some(it=>(it.remarks||'').toString().trim());
 
-  const htmlContent=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 @page{size:A4 portrait;margin:0;}
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
@@ -7686,27 +7756,115 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 </div>
 </div>
 </body></html>`;
+}
 
-  const old=document.getElementById('_print_frame_cert');if(old)old.parentNode.removeChild(old);
-  const iframe=document.createElement('iframe');
-  iframe.id='_print_frame_cert';
-  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
-  // Signature/Stamp are Drive-hosted URLs needing an actual network fetch,
-  // unlike the rest of this self-contained document — a fixed delay isn't
-  // enough on a slower connection, so wait for every image to actually
-  // finish loading (same fix as the invoice/quotation print path).
-  document.body.appendChild(iframe);
-  const iDoc=iframe.contentDocument||iframe.contentWindow.document;
-  // document.write()/close() run synchronously — the DOM (incl. every <img>
-  // tag) already exists the instant close() returns, so there's no need to
-  // wait for an onload event at all. That's deliberate: appendChild() fires
-  // its OWN "load" for the initial blank frame, and depending on timing
-  // the write can fire a second one — an onload handler here runs twice,
-  // printing once too early (blank/no stamp-signature) and once correctly,
-  // which is exactly the double-print-dialog bug this replaces.
-  iDoc.open();iDoc.write(htmlContent);iDoc.close();
-  const iWin=iframe.contentWindow;
-  LedgerPrint.waitForImagesToLoad(iWin.document, 4000).then(()=>{ iWin.focus(); iWin.print(); });
+// "Horizon Style" — a second, visually distinct certificate print template
+// (red/black diagonal corner accents, black footer bar, a fire-extinguisher-
+// specific item table: Year of Mfg / Refilling Due Date / Sr No). Mirrors
+// backend/src/lib/certificateHtml.js's buildCertificateHtmlHorizon — must
+// stay in sync. Reuses the exact same COMPANY.logo/signature/stamp/
+// watermark fields as buildDefaultCertHtml above; visually inspired by a
+// tenant-supplied sample PDF, not a pixel-perfect trace of it.
+function buildHorizonCertHtml(data){
+  const fmtD=fmtDMY(data.issueDate);
+
+  const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+    ? `<div style="margin:0 auto 1mm;">
+         <img src="${COMPANY.stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
+         <img src="${COMPANY.signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
+       </div>`
+    : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
+
+  const certItems=(data.items&&data.items.length?data.items:[]);
+  const itemsHtml = certItems.length
+    ? certItems.map((it,idx)=>`<tr>
+        <td style="text-align:center;">${idx+1}</td>
+        <td>${escapeHtml(it.desc||'').replace(/\n/g,'<br/>')}</td>
+        <td style="text-align:center;">${escapeHtml(it.yearOfMfg||'')}</td>
+        <td style="text-align:center;">${escapeHtml(it.qty||'')}</td>
+        <td style="text-align:center;">${it.refillingDueDate?fmtDMY(it.refillingDueDate):''}</td>
+        <td style="text-align:center;">${escapeHtml(it.srNo||'')}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:#999;">No items specified</td></tr>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+@page{size:A4 portrait;margin:0;}
+html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
+body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hz-page{width:210mm;height:297mm;margin:0 auto;background:#fff;display:flex;flex-direction:column;box-sizing:border-box;border:5px solid #E2231A;position:relative;overflow:hidden;}
+.hz-corner-black{position:absolute;top:-1px;right:-1px;width:60mm;height:32mm;background:#141414;clip-path:polygon(100% 0,100% 100%,0 0);}
+.hz-corner-red{position:absolute;top:-1px;right:14mm;width:24mm;height:32mm;background:#E2231A;clip-path:polygon(100% 0,100% 100%,0 0);}
+.hz-body{flex:1;display:flex;flex-direction:column;padding:10mm 12mm 6mm;box-sizing:border-box;position:relative;}
+.hz-header{display:flex;align-items:center;gap:4mm;margin-bottom:4mm;}
+.hz-logo{flex:0 0 22mm;width:22mm;display:flex;align-items:center;justify-content:center;}
+.hz-logo img{max-width:22mm;max-height:20mm;object-fit:contain;}
+.hz-company-name{font-size:26px;font-weight:800;letter-spacing:0.5px;color:#111;line-height:1.15;}
+.hz-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin:5mm 0 4mm;}
+.hz-title{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;text-decoration:underline;letter-spacing:1px;color:#111;}
+.hz-report-no{font-size:10px;color:#333;margin-top:1mm;}
+.hz-date{font-size:12px;font-weight:bold;color:#111;white-space:nowrap;}
+.hz-client{font-size:20px;font-weight:800;color:#111;margin-bottom:2mm;text-transform:uppercase;}
+.hz-address{font-size:11px;font-weight:bold;color:#222;line-height:1.6;margin-bottom:5mm;}
+.hz-warranty{font-size:11px;font-weight:bold;color:#111;text-align:center;line-height:1.6;margin-bottom:5mm;}
+.hz-items{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:4mm;}
+.hz-items th{border:1px solid #111;padding:2mm;background:#fceceb;color:#111;font-size:9px;text-transform:uppercase;}
+.hz-items td{border:1px solid #111;padding:2mm;color:#111;}
+.hz-supplied{font-size:10px;color:#111;margin-bottom:10mm;}
+.hz-sign-row{display:flex;justify-content:flex-end;margin-top:auto;}
+.hz-sign{text-align:center;}
+.hz-sign-for{font-size:11px;font-weight:bold;color:#111;margin-bottom:2mm;}
+.hz-sign-label{font-size:10px;font-weight:bold;color:#111;margin-top:1mm;letter-spacing:0.5px;}
+.hz-footer{background:#141414;color:#fff;padding:4mm 12mm;position:relative;overflow:hidden;font-size:10px;line-height:1.7;}
+.hz-footer-accent{position:absolute;top:0;right:0;width:45mm;height:100%;background:#E2231A;clip-path:polygon(100% 0,100% 100%,35% 100%);}
+.hz-footer-inner{position:relative;z-index:1;}
+</style></head><body>
+<div class="hz-page">
+  <div class="hz-corner-black"></div><div class="hz-corner-red"></div>
+  <div class="hz-body" style="${COMPANY.watermark?`background-image:url('${COMPANY.watermark}');background-repeat:no-repeat;background-position:center 55%;background-size:60% auto;`:''}">
+
+    <div class="hz-header">
+      ${COMPANY.logo?`<div class="hz-logo"><img src="${COMPANY.logo}"></div>`:''}
+      <div class="hz-company-name">${escapeHtml(COMPANY.name)}</div>
+    </div>
+
+    <div class="hz-title-row">
+      <div>
+        <div class="hz-title">Certificate</div>
+        <div class="hz-report-no">Report No. ${escapeHtml(data.certNo)||'-'}</div>
+      </div>
+      <div class="hz-date">DATE:- ${fmtD}</div>
+    </div>
+
+    <div class="hz-client">Client Name: ${escapeHtml(data.recipientName)||'-'}</div>
+    ${data.recipientAddress?`<div class="hz-address">Address: ${escapeHtml(data.recipientAddress).replace(/\n/g,'<br/>')}</div>`:''}
+
+    <div class="hz-warranty">This is certified that the under-noted fire extinguisher(s) have been supplied by us and are warranted for a period of One year from the date of sale.</div>
+
+    <table class="hz-items">
+      <thead><tr>
+        <th style="width:8%;">Sr No.</th><th style="width:32%;">Description</th>
+        <th style="width:16%;">Year of Manufacturing</th><th style="width:10%;">Qty</th>
+        <th style="width:18%;">Refilling Due Date</th><th style="width:16%;">Sr.No.</th>
+      </tr></thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
+
+    <div class="hz-supplied">The above said fire extinguisher have been supplied to the client on <strong>Dated: ${fmtD}</strong></div>
+
+    <div class="hz-sign-row"><div class="hz-sign">
+      <div class="hz-sign-for">FOR : ${escapeHtml(COMPANY.name)}</div>
+      ${sigStampHtml}
+      <div class="hz-sign-label">Authorised Signature</div>
+    </div></div>
+  </div>
+
+  <div class="hz-footer"><div class="hz-footer-accent"></div><div class="hz-footer-inner">
+    ${COMPANY.address?`<div>Add. ${escapeHtml(COMPANY.address)}</div>`:''}
+    <div>${COMPANY.phone?'Contact No. '+escapeHtml(COMPANY.phone)+' ':''}${COMPANY.email?'&nbsp;|&nbsp; E-mail: '+escapeHtml(COMPANY.email):''}</div>
+  </div></div>
+</div>
+</body></html>`;
 }
 
 
