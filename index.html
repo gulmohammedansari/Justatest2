@@ -2100,6 +2100,11 @@
         <div class="card-header"><div class="card-title">Branding — Logo, Signature &amp; Stamp</div></div>
         <div class="modal-body">
           <div class="form-grid">
+            <div class="form-group full">
+              <label>Tagline</label>
+              <input type="text" id="settings-tagline" placeholder="e.g. Supplier of Fire Fighting Equipments" oninput="COMPANY.tagline=this.value;"/>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Shown under your company name on documents that use the "Horizon Style" print format.</div>
+            </div>
             <div class="form-group">
               <label>Company Logo</label>
               <input type="file" id="settings-logo-file" accept="image/*" onchange="onBrandingImageSelected(this,'logo',false)"/>
@@ -2388,7 +2393,7 @@ let COMPANY = {
   name:'', address:'', gstin:'', state:'', stateCode:'',
   phone:'', email:'', website:'', bank:'',
   acctName:'', acctNo:'', ifsc:'', upi:'', pan:'', logo:'', signature:'', calendarId:'', stamp:'', watermark:'',
-  watermarkSrc:'', watermarkStyle:'tilted'
+  watermarkSrc:'', watermarkStyle:'tilted', tagline:''
 };
 
 function escapeHtml(text){return String(text==null?'':text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2488,6 +2493,7 @@ function applyCompanyToUI(){
   const addr=document.getElementById('settings-address'); if(addr) addr.value=COMPANY.address||'';
   const state=document.getElementById('settings-state'); if(state) state.value=COMPANY.state?(COMPANY.state+(COMPANY.stateCode?' (Code: '+COMPANY.stateCode+')':'')):'';
   const calId=document.getElementById('settings-calendar-id'); if(calId) calId.value=COMPANY.calendarId||'';
+  const tagline=document.getElementById('settings-tagline'); if(tagline) tagline.value=COMPANY.tagline||'';
   ['logo','signature','stamp'].forEach(field=>{
     const val=COMPANY[field]||'';
     const valInput=document.getElementById('settings-'+field+'-value'); if(valInput) valInput.value=val;
@@ -2519,7 +2525,9 @@ function saveCalendarSettings(){
   btn.disabled=true; btn.textContent='Saving…';
   gasPostAMC('saveCompanySettings',{data:{
     pan:COMPANY.pan||'', logo:COMPANY.logo||'', signature:COMPANY.signature||'',
-    stamp:COMPANY.stamp||'', watermark:COMPANY.watermark||'', calendarId
+    stamp:COMPANY.stamp||'', watermark:COMPANY.watermark||'', calendarId,
+    watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
+    tagline:COMPANY.tagline||''
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2641,6 +2649,7 @@ function saveBrandingSettings(){
   const logo=document.getElementById('settings-logo-value').value||'';
   const signature=document.getElementById('settings-signature-value').value||'';
   const stamp=document.getElementById('settings-stamp-value').value||'';
+  const tagline=(document.getElementById('settings-tagline').value||'').trim();
   const btn=document.getElementById('settings-branding-save-btn');
   btn.disabled=true; btn.textContent='Saving…';
   // Watermark has its own Save button/card now — pass the existing value
@@ -2648,7 +2657,7 @@ function saveBrandingSettings(){
   gasPostAMC('saveCompanySettings',{data:{
     pan:COMPANY.pan||'', logo, signature, stamp, watermark:COMPANY.watermark||'',
     watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
-    calendarId:COMPANY.calendarId||''
+    calendarId:COMPANY.calendarId||'', tagline
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2658,9 +2667,11 @@ function saveBrandingSettings(){
       // multi-hundred-KB data URI.
       const saved=d.company||{};
       COMPANY.logo=saved.logo||''; COMPANY.signature=saved.signature||''; COMPANY.stamp=saved.stamp||'';
+      COMPANY.tagline=saved.tagline||'';
       document.getElementById('settings-logo-value').value=COMPANY.logo;
       document.getElementById('settings-signature-value').value=COMPANY.signature;
       document.getElementById('settings-stamp-value').value=COMPANY.stamp;
+      document.getElementById('settings-tagline').value=COMPANY.tagline;
       sessionStorage.setItem('gme_company',JSON.stringify(COMPANY));
       showToast('Branding saved.','success');
     } else {
@@ -2727,12 +2738,12 @@ function saveWatermarkSettings(){
   const btn=document.getElementById('settings-watermark-save-btn');
   btn.disabled=true; btn.textContent='Saving…';
   // Pass every other branding field through unchanged — this save must not
-  // clobber Logo/Signature/Stamp/PAN/Calendar, same reasoning as
+  // clobber Logo/Signature/Stamp/PAN/Calendar/Tagline, same reasoning as
   // saveCalendarSettings().
   gasPostAMC('saveCompanySettings',{data:{
     pan:COMPANY.pan||'', logo:COMPANY.logo||'', signature:COMPANY.signature||'',
     stamp:COMPANY.stamp||'', calendarId:COMPANY.calendarId||'',
-    watermarkSrc, watermarkStyle, watermark
+    watermarkSrc, watermarkStyle, watermark, tagline:COMPANY.tagline||''
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -7788,6 +7799,8 @@ function buildHorizonCertHtml(data){
     : `<tr><td colspan="6" style="text-align:center;color:#999;">No items specified</td></tr>`;
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
 @page{size:A4 portrait;margin:0;}
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
@@ -7799,9 +7812,10 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 .hz-header{display:flex;align-items:center;gap:4mm;margin-bottom:4mm;}
 .hz-logo{flex:0 0 22mm;width:22mm;display:flex;align-items:center;justify-content:center;}
 .hz-logo img{max-width:22mm;max-height:20mm;object-fit:contain;}
-.hz-company-name{font-size:26px;font-weight:800;letter-spacing:0.5px;color:#111;line-height:1.15;}
+.hz-company-name{font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:900;letter-spacing:0.3px;color:#1f4d2c;line-height:1.15;}
+.hz-tagline{font-size:9px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#E2231A;margin-top:2mm;}
 .hz-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin:5mm 0 4mm;}
-.hz-title{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;text-decoration:underline;letter-spacing:1px;color:#111;}
+.hz-title{font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:900;text-decoration:underline;letter-spacing:1px;color:#111;}
 .hz-report-no{font-size:10px;color:#333;margin-top:1mm;}
 .hz-date{font-size:12px;font-weight:bold;color:#111;white-space:nowrap;}
 .hz-client{font-size:20px;font-weight:800;color:#111;margin-bottom:2mm;text-transform:uppercase;}
@@ -7825,7 +7839,10 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 
     <div class="hz-header">
       ${COMPANY.logo?`<div class="hz-logo"><img src="${COMPANY.logo}"></div>`:''}
-      <div class="hz-company-name">${escapeHtml(COMPANY.name)}</div>
+      <div>
+        <div class="hz-company-name">${escapeHtml(COMPANY.name)}</div>
+        ${COMPANY.tagline?`<div class="hz-tagline">${escapeHtml(COMPANY.tagline)}</div>`:''}
+      </div>
     </div>
 
     <div class="hz-title-row">
