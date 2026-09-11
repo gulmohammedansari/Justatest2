@@ -4487,11 +4487,15 @@ var LedgerPrint = (function () {
   function partiesBlock(inv) {
     // Invoices don't show a Ship To column at all — Bill To's flex-grow
     // absorbs the freed width automatically (see .inv-parties .bill in
-    // PAGE_STYLE). Challan/Quotation/Credit-Debit Note are unaffected.
-    var showShip = inv.kind !== 'invoice';
+    // PAGE_STYLE). Challan/Credit-Debit Note are unaffected. Quotations
+    // show neither Ship To (nothing's shipped yet) nor "Bill to" wording
+    // (nothing's being billed yet either) — just "To". Must stay in sync
+    // with backend/src/lib/ledgerPrint.js's identical port.
+    var showShip = inv.kind !== 'invoice' && inv.kind !== 'quotation';
+    var billLabel = inv.kind === 'quotation' ? 'To' : 'Bill to';
     var sh = inv.shipTo && inv.shipTo.name ? inv.shipTo : inv.customer;
     return '<div class="inv-parties" style="height:' + GEO.partiesH + 'mm">' +
-      '<div class="bill"><span class="lbl">Bill to</span>' +
+      '<div class="bill"><span class="lbl">' + billLabel + '</span>' +
         '<div class="party-name">' + esc(inv.customer.name) + '</div>' +
         '<div class="party-lines">' + partyLines(inv.customer) + '</div></div>' +
       (showShip
@@ -4644,9 +4648,12 @@ var LedgerPrint = (function () {
           '<div class="img">' + sigStampHtml + '</div><div>Authorised signatory</div></div>'
       : '<div class="sign"><div>Received in good condition</div>' +
           '<div class="img"></div><div>Receiver signature with date</div></div>';
+    // Quotations don't show bank details — nothing's being paid yet. Must
+    // stay in sync with backend/src/lib/ledgerPrint.js's identical port.
+    var bankCell = inv.kind === 'quotation' ? '' : (inv.doc.money ? bankTable(inv.bank) : challanRefTable(inv));
     return wordsBand +
       '<div class="inv-bank" style="height:' + GEO.bankH + 'mm">' +
-        '<div class="bank">' + (inv.doc.money ? bankTable(inv.bank) : challanRefTable(inv)) + '</div>' +
+        '<div class="bank">' + bankCell + '</div>' +
         '<div class="terms"><span class="lbl">Terms</span><br>' + esc(TERMS(inv)) + '</div>' +
         signCell + '</div>';
   }
