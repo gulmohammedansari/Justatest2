@@ -947,6 +947,9 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Account</div>
+      <button class="nav-item" onclick="navigate('manageusers')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Manage Users
+      </button>
       <button class="nav-item" onclick="navigate('settings')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
       </button>
@@ -1938,6 +1941,29 @@
     </div>
   </div>
 
+  <!-- MANAGE USERS PAGE — a tenant's own Admin managing users within their
+       OWN tenant (separate from the Super Admin Portal's cross-tenant
+       version in super-admin.html). Admin-only on the backend
+       (addMyTenantUser/updateMyTenantUser/deleteMyTenantUser/
+       listMyTenantUsers); a non-Admin who navigates here sees the
+       backend's rejection message instead of data, same as every other
+       Admin-only action in this app (no frontend role-hiding). -->
+  <div id="page-manageusers" class="page page-hidden">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" placeholder="Search by username, display name…" oninput="filterMyTenantUsers(this.value)"/>
+      </div>
+      <button class="btn btn-primary" onclick="openAddMyTenantUser()">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add User
+      </button>
+    </div>
+    <div class="card table-scroll-wrap">
+      <table><thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody id="manageusers-body"><tr><td colspan="6" class="loading-row">Loading…</td></tr></tbody></table>
+    </div>
+  </div>
+
   <!-- AMC CONTRACTS PAGE -->
   <div id="page-amc" class="page page-hidden">
     <!-- Renewal Summary Timeline -->
@@ -2328,6 +2354,30 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('item-modal')">Cancel</button>
       <button class="btn btn-primary" id="item-save-btn" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT TENANT USER MODAL (Manage Users page) -->
+<div class="modal-overlay" id="mtu-modal">
+  <div class="modal" style="width:460px;">
+    <div class="modal-header">
+      <div class="modal-title" id="mtu-modal-title">Add User</div>
+      <button class="close-btn" onclick="closeModal('mtu-modal')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mtu-mode" value="add"/>
+      <div class="form-grid">
+        <div class="form-group full"><label>Username <span style="color:var(--danger);">*</span></label><input type="text" id="mtu-username" placeholder="e.g. staff1"/></div>
+        <div class="form-group full"><label>Display Name</label><input type="text" id="mtu-display-name" placeholder="e.g. Front Desk"/></div>
+        <div class="form-group"><label>Role</label><select id="mtu-role"><option value="Admin">Admin</option><option value="Staff">Staff</option></select></div>
+        <div class="form-group"><label>Status</label><select id="mtu-status"><option value="Active">Active</option><option value="Suspended">Suspended</option></select></div>
+        <div class="form-group full"><label id="mtu-password-label">Password <span style="color:var(--danger);">*</span></label><input type="password" id="mtu-password" placeholder="Leave blank to keep unchanged (edit mode)"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('mtu-modal')">Cancel</button>
+      <button class="btn btn-primary" id="mtu-save-btn" onclick="saveMyTenantUser()">Save</button>
     </div>
   </div>
 </div>
@@ -2846,7 +2896,7 @@ function navigate(page){
   const pg=document.getElementById('page-'+page);
   if(pg) pg.classList.remove('page-hidden');
 
-  const titles={dashboard:'Dashboard',invoices:'Invoices',challans:'Challans',quotations:'Quotations',creditnotes:'Credit/Debit Notes',certificates:'Certificates',amc:'AMC Contracts',payments:'Payments',ledger:'Ledger',customers:'Customers',items:'Products & Services',reports:'Reports',deletionlog:'Deletion Log',settings:'Settings'};
+  const titles={dashboard:'Dashboard',invoices:'Invoices',challans:'Challans',quotations:'Quotations',creditnotes:'Credit/Debit Notes',certificates:'Certificates',amc:'AMC Contracts',payments:'Payments',ledger:'Ledger',customers:'Customers',items:'Products & Services',reports:'Reports',deletionlog:'Deletion Log',manageusers:'Manage Users',settings:'Settings'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
 
   // Toggle topbar action buttons
@@ -2872,6 +2922,7 @@ function navigate(page){
   if(page==='customers')   loadAndRenderCustomers();
   if(page==='items')       loadAndRenderItems();
   if(page==='deletionlog') loadAndRenderDeletionLog();
+  if(page==='manageusers') loadAndRenderMyTenantUsers();
 }
 
 // ── NEW INVOICE PAGE ──────────────────────────────────────────────────────────
@@ -7540,6 +7591,131 @@ function renderDeletionLogTable(log){
 function filterDeletionLog(val){
   const q=val.toLowerCase();
   renderDeletionLogTable(liveDeletionLog.filter(l=>(l['Document No']||'').toLowerCase().includes(q)||(l['Deleted By']||'').toLowerCase().includes(q)));
+}
+
+// ── MANAGE USERS (tenant's own Admin managing their own tenant's users) —
+// listMyTenantUsers/addMyTenantUser/updateMyTenantUser/deleteMyTenantUser
+// are all Admin-only on the backend; same no-frontend-role-hiding pattern
+// as the Deletion Log above.
+let liveMyTenantUsers=[];
+async function loadAndRenderMyTenantUsers(){
+  const token=sessionStorage.getItem('gme_token')||'';
+  document.getElementById('manageusers-body').innerHTML='<tr><td colspan="6" class="loading-row">Loading…</td></tr>';
+  try{
+    const res=await fetch(`${googleScriptUrl}?action=listMyTenantUsers&token=${encodeURIComponent(token)}`);
+    const data=await res.json();
+    if(data.sessionExpired){doLogout();return;}
+    if(!data.success){
+      document.getElementById('manageusers-body').innerHTML=`<tr><td colspan="6" class="loading-row">${escapeHtml(data.message||'Could not load users.')}</td></tr>`;
+      return;
+    }
+    liveMyTenantUsers=data.users||[];
+    renderMyTenantUsersTable(liveMyTenantUsers);
+  }catch(e){
+    document.getElementById('manageusers-body').innerHTML='<tr><td colspan="6" class="loading-row">Failed to load. Check connection.</td></tr>';
+  }
+}
+
+function renderMyTenantUsersTable(list){
+  if(!list.length){
+    document.getElementById('manageusers-body').innerHTML='<tr><td colspan="6"><div class="empty-state" style="padding:30px;"><h3>No users yet</h3><p>Add a user using the button above.</p></div></td></tr>';
+    return;
+  }
+  document.getElementById('manageusers-body').innerHTML=list.map(u=>{
+    const uname=escapeForInlineHandler(u['Username']);
+    return `<tr>
+      <td style="font-weight:600;color:var(--accent)">${escapeHtml(u['Username'])||'-'}</td>
+      <td>${escapeHtml(u['Display Name'])||'-'}</td>
+      <td>${escapeHtml(u['Role'])||'-'}</td>
+      <td>${escapeHtml(u['Status'])||'-'}</td>
+      <td style="font-size:12px;color:var(--text3);">${escapeHtml(u['Created Date'])||'-'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="openEditMyTenantUser('${uname}')">Edit</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteMyTenantUser('${uname}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterMyTenantUsers(val){
+  const q=val.toLowerCase();
+  renderMyTenantUsersTable(liveMyTenantUsers.filter(u=>(u['Username']||'').toLowerCase().includes(q)||(u['Display Name']||'').toLowerCase().includes(q)));
+}
+
+function openAddMyTenantUser(){
+  document.getElementById('mtu-mode').value='add';
+  document.getElementById('mtu-modal-title').textContent='Add User';
+  const uEl=document.getElementById('mtu-username'); uEl.value=''; uEl.disabled=false;
+  document.getElementById('mtu-display-name').value='';
+  document.getElementById('mtu-role').value='Admin';
+  document.getElementById('mtu-status').value='Active';
+  document.getElementById('mtu-password').value='';
+  document.getElementById('mtu-password-label').innerHTML='Password <span style="color:var(--danger);">*</span>';
+  document.getElementById('mtu-password').placeholder='';
+  openModal('mtu-modal');
+}
+
+function openEditMyTenantUser(username){
+  const u=liveMyTenantUsers.find(x=>(x['Username']||'')===username);
+  if(!u){showToast('User not found.','error');return;}
+  document.getElementById('mtu-mode').value='edit';
+  document.getElementById('mtu-modal-title').textContent='Edit User — '+username;
+  const uEl=document.getElementById('mtu-username'); uEl.value=username; uEl.disabled=true;
+  document.getElementById('mtu-display-name').value=u['Display Name']||'';
+  document.getElementById('mtu-role').value=u['Role']||'Admin';
+  document.getElementById('mtu-status').value=u['Status']||'Active';
+  document.getElementById('mtu-password').value='';
+  document.getElementById('mtu-password-label').textContent='New Password (optional)';
+  document.getElementById('mtu-password').placeholder='Leave blank to keep unchanged';
+  openModal('mtu-modal');
+}
+
+function saveMyTenantUser(){
+  const mode=document.getElementById('mtu-mode').value;
+  const username=document.getElementById('mtu-username').value.trim();
+  const displayName=document.getElementById('mtu-display-name').value.trim();
+  const role=document.getElementById('mtu-role').value;
+  const status=document.getElementById('mtu-status').value;
+  const password=document.getElementById('mtu-password').value;
+  if(!username){showToast('Username is required.','error');return;}
+
+  const btn=document.getElementById('mtu-save-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+
+  const done=(d)=>{
+    btn.disabled=false; btn.textContent='Save';
+    if(d.success){
+      closeModal('mtu-modal');
+      showToast('User saved.','success');
+      loadAndRenderMyTenantUsers();
+    } else {
+      showToast(d.message||'Save failed.','error');
+    }
+  };
+  const fail=()=>{ btn.disabled=false; btn.textContent='Save'; showToast('Save failed — check connection.','error'); };
+
+  if(mode==='add'){
+    if(!password){showToast('Password is required for a new user.','error');btn.disabled=false;btn.textContent='Save';return;}
+    gasPostAMC('addMyTenantUser',{data:{username,password,displayName,role,status}}).then(done).catch(fail);
+  } else {
+    const data={displayName,role,status};
+    if(password) data.newPassword=password;
+    gasPostAMC('updateMyTenantUser',{username,data}).then(done).catch(fail);
+  }
+}
+
+function deleteMyTenantUser(username){
+  username=String(username||'').trim();
+  if(!username){showToast('Username missing.','error');return;}
+  if(!confirm('Delete user '+username+'? This cannot be undone.')) return;
+  gasPostAMC('deleteMyTenantUser',{username}).then(d=>{
+    if(d.success){
+      showToast('User deleted.','success');
+      loadAndRenderMyTenantUsers();
+    } else {
+      showToast(d.message||'Delete failed.','error');
+    }
+  }).catch(()=>showToast('Delete failed — check connection.','error'));
 }
 
 // ── PRINT CERTIFICATE ─────────────────────────────────────────────────────────
