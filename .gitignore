@@ -3,6 +3,9 @@
 # contains a hardcoded bank account number/IFSC/UPI as a fallback default
 # that has no business being in a public repo either way.
 Gscript.txt
+Gscript_v2.txt
+index-failover-full.html
+index-failover-readonly.html
 
 # Internal reference docs (architecture notes, a security audit that
 # describes exploit techniques even for already-fixed issues, migration
@@ -11,6 +14,7 @@ Gscript.txt
 HANDOFF.md
 SECURITY_AUDIT.md
 CLOUD_RUN_MIGRATION_PLAN.md
+DEPLOYMENT_GUIDE.md
 
 # The Cloud Run backend-in-progress — this git repo/remote (Justatest2) is
 # the GitHub Pages FRONTEND repo specifically. The backend is a separate
