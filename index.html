@@ -1072,6 +1072,13 @@
               <label>Transport / Vehicle No.</label>
               <input type="text" id="ch-transport" placeholder="e.g. MH01AB1234" oninput="challanState.transport=this.value;"/>
             </div>
+            <div class="form-group">
+              <label>Print Format</label>
+              <select id="ch-print-format" onchange="challanState.printFormat=this.value;">
+                <option value="default">Default</option>
+                <option value="modern">Modern</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -1205,6 +1212,7 @@
               <select id="cert-format" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();">
                 <option value="default">Default</option>
                 <option value="horizon">Horizon Style</option>
+                <option value="modern">Modern</option>
               </select>
             </div>
             <div class="form-group">
@@ -1352,6 +1360,13 @@
             <div class="form-group">
               <label>Ref. Invoice / Challan No. (Optional)</label>
               <input type="text" id="qt-ref-no" placeholder="e.g. INV/26-27/003" oninput="quotState.refNo=this.value;"/>
+            </div>
+            <div class="form-group">
+              <label>Print Format</label>
+              <select id="qt-print-format" onchange="quotState.printFormat=this.value;">
+                <option value="default">Default</option>
+                <option value="modern">Modern</option>
+              </select>
             </div>
           </div>
         </div>
@@ -1685,6 +1700,13 @@
                 <option value="CGST_SGST">CGST + SGST</option>
                 <option value="IGST">IGST</option>
                 <option value="NO_GST">No GST</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Print Format</label>
+              <select id="inv-print-format" onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;">
+                <option value="default">Default</option>
+                <option value="modern">Modern</option>
               </select>
             </div>
           </div>
@@ -2464,7 +2486,7 @@ function escapeForInlineHandler(v){
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let invState = {
-  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'' },
+  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'', printFormat:'default' },
   buyer:{ name:'', address:'', gstin:'', state:'Maharashtra', stateCode:'27', phone:'', email:'' },
   taxes:{ cgst:9, sgst:9, igst:0 },
   lineItems:[], isSaved:false, savedBuyers:[], buyerSearchTimeout:null,
@@ -2936,7 +2958,8 @@ function openNewInvoicePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   // Reset state
-  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:''};
+  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:'default'};
+  const invFmtSel=document.getElementById('inv-print-format');if(invFmtSel)invFmtSel.value='default';
   invState.buyer={name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''};
   invState.taxes={cgst:9,sgst:9,igst:0};
   invState.lineItems=[];invState.isSaved=false;
@@ -3685,7 +3708,7 @@ async function handleSaveToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default'
     }
   };
   try{
@@ -3739,7 +3762,7 @@ async function handleUpdateInvoiceToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default'
     }
   };
   try{
@@ -3773,7 +3796,8 @@ function handlePrint(){
     buyerPhone:invState.buyer.phone, buyerEmail:invState.buyer.email,
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
-    items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)}))
+    items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
+    printFormat:invState.invoiceMeta.printFormat||'default'
   });
 }
 
@@ -3794,7 +3818,7 @@ async function reprintInvoice(invoiceNo){
       buyerPhone:inv['Buyer Phone']||'', buyerEmail:inv['Buyer Email']||'',
       subTotal:inv['Sub Total'], cgstRate:inv['CGST Rate'], sgstRate:inv['SGST Rate'], igstRate:inv['IGST Rate'],
       cgstAmount:inv['CGST Amount'], sgstAmount:inv['SGST Amount'], igstAmount:inv['IGST Amount'],
-      grandTotal:inv['Grand Total'], items
+      grandTotal:inv['Grand Total'], items, printFormat:inv['Print Format']||'default'
     });
   }catch(e){showToast('Failed to load invoice for print.','error');}
 }
@@ -3937,7 +3961,7 @@ async function editInvoice(invoiceNo){
     document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
     // Populate state from the saved invoice
-    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||''};
+    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||'',printFormat:inv['Print Format']||'default'};
     invState.buyer={name:inv['Buyer Name']||'',address:inv['Buyer Address']||'',gstin:inv['Buyer GSTIN']||'',state:inv['Buyer State']||'Maharashtra',stateCode:inv['State Code']||'27',phone:inv['Buyer Phone']||'',email:inv['Buyer Email']||''};
     const cgstRate=parseFloat(inv['CGST Rate']||0), sgstRate=parseFloat(inv['SGST Rate']||0), igstRate=parseFloat(inv['IGST Rate']||0);
     invState.taxes={cgst:cgstRate||9, sgst:sgstRate||9, igst:igstRate||0};
@@ -3947,6 +3971,7 @@ async function editInvoice(invoiceNo){
     document.getElementById('inv-no').value=invState.invoiceMeta.invoiceNo;
     document.getElementById('inv-date').value=invState.invoiceMeta.date;
     document.getElementById('inv-challan').value=invState.invoiceMeta.challanNo;
+    const invFmtSel2=document.getElementById('inv-print-format');if(invFmtSel2)invFmtSel2.value=invState.invoiceMeta.printFormat;
     document.getElementById('inv-gst-type').value=(!cgstRate&&!sgstRate&&!igstRate)?'NO_GST':(igstRate>0?'IGST':'CGST_SGST');
     document.getElementById('buyer-name').value=invState.buyer.name;
     document.getElementById('buyer-address').value=invState.buyer.address;
@@ -4773,12 +4798,26 @@ var LedgerPrint = (function () {
     };
   }
 
+  // "Modern" print format — pure CSS reskin, same class names as PAGE_STYLE,
+  // dispatched by data.printFormat. Must stay byte-for-byte in sync with
+  // backend/src/lib/ledgerPrint.js's identical block — see that file's
+  // header comments for the full design rationale (left color sidebar,
+  // solid-accent item-table header, zebra rows, solid-accent total bar).
+  var ACCENT = '#4338CA', ACCENT_TINT = '#EEF2FF', LINE = '#E5E7EB', ROW_LINE = '#F3F4F6',
+    TEXT = '#1F2937', MUTED = '#6B7280', DARK = '#1F2937', ON_DARK_MUTED = '#9CA3AF';
+  var SIDEBAR_W = 62, SIDEBAR_H = 57;
+  var PAGE_STYLE_MODERN = "@page{size:A4 portrait;margin:8mm}\nhtml,body{margin:0;padding:0;background:#fff}\n*{box-sizing:border-box}\n.inv-page{margin:0 auto;break-after:page;page-break-after:always}\n.inv-page:last-child{break-after:auto;page-break-after:auto}\n.inv-page,.inv-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}\ntr,td,th,.inv-items,.inv-foot{break-inside:avoid;page-break-inside:avoid}\n\n.inv-page{\n  width:194mm;background:#fff;color:" + TEXT + ";box-sizing:border-box;\n  position:relative;display:flex;flex-direction:column;overflow:hidden;\n  font-family:'Inter',Arial,Helvetica,sans-serif;\n  font-size:8pt;line-height:1.22;\n  border:.2mm solid " + LINE + ";\n}\n.inv-page::before{content:'';position:absolute;left:0;top:0;width:" + SIDEBAR_W + "mm;height:" + SIDEBAR_H + "mm;background:" + ACCENT + ";}\n.inv-page *{box-sizing:border-box}\n.inv-page .r{text-align:right}\n.inv-page .c{text-align:center}\n.inv-page .n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}\n.inv-page .lbl{font-size:6.4pt;letter-spacing:.05em;text-transform:uppercase;color:" + MUTED + "}\n.inv-page .bold{font-weight:700}\n\n.inv-title{\n  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:.8mm;\n  margin-left:" + SIDEBAR_W + "mm;padding:2mm 3mm 0;border-bottom:none;flex:0 0 auto;background:transparent;\n}\n.inv-title h1{font-size:20pt;letter-spacing:.02em;text-transform:uppercase;font-weight:700;color:" + ACCENT + "}\n.inv-title .copy{font-size:6.6pt;text-transform:uppercase;letter-spacing:.08em;color:" + MUTED + "}\n\n.inv-seller{\n  position:absolute;left:0;top:0;width:" + SIDEBAR_W + "mm;height:" + (GEO.titleH + GEO.sellerH) + "mm;\n  display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:1mm;\n  padding:2mm;overflow:hidden;background:transparent;\n}\n.inv-seller .logo{width:auto;flex:none;background:#fff;border-radius:1.6mm;padding:1.2mm;}\n.inv-seller .logo img{max-width:16mm;max-height:12mm;object-fit:contain;display:block;}\n.inv-seller .who{min-width:0}\n.inv-seller .who h2{font-size:11pt;font-weight:700;letter-spacing:0;line-height:1.15;color:#fff}\n.inv-seller .who p{margin:.6mm 0 0;font-size:6.8pt;line-height:1.3;color:rgba(255,255,255,.8)}\n.inv-seller .ids{\n  position:absolute;left:" + (SIDEBAR_W + 4) + "mm;top:9mm;right:3mm;font-size:6.8pt;text-align:right;\n}\n.inv-seller .ids div{display:flex;justify-content:flex-end;gap:2mm;border-bottom:none;padding:.35mm 0;color:" + MUTED + "}\n\n.inv-parties{display:flex;margin-left:" + SIDEBAR_W + "mm;border-bottom:.15mm solid " + LINE + ";flex:0 0 auto;overflow:hidden}\n.inv-parties > div{padding:2mm 3mm;overflow:hidden}\n.inv-parties .bill{\n  position:absolute;left:0;top:" + GEO.titleH + "mm;width:" + SIDEBAR_W + "mm;height:" + (GEO.sellerH + GEO.partiesH) + "mm;\n  padding:3mm;border-right:none;color:#fff;overflow:hidden;\n}\n.inv-parties .bill .lbl{color:rgba(255,255,255,.7)}\n.inv-parties .ship{flex:1 1 55%;border-right:.15mm solid " + LINE + "}\n.inv-parties .meta{flex:0 0 60mm;padding:1.6mm 2.4mm;background:" + ACCENT_TINT + ";border-radius:1.6mm;margin:1.4mm 1.4mm 1.4mm 0}\n.inv-parties .party-name{font-size:8.6pt;font-weight:700;margin:.6mm 0;color:" + TEXT + "}\n.inv-parties .party-lines{font-size:7.3pt;line-height:1.32;color:" + MUTED + "}\n.inv-parties .bill .party-name{color:#fff}\n.inv-parties .bill .party-lines{color:rgba(255,255,255,.85)}\n.inv-parties .meta table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:6.9pt}\n.inv-parties .meta td{\n  padding:0 1mm;border-bottom:none;line-height:3mm;\n  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;\n}\n.inv-parties .meta td:first-child{color:" + ACCENT + ";width:42%}\n.inv-parties .meta tr:last-child td{border-bottom:0}\n\n.inv-strip{display:flex;justify-content:space-between;gap:3mm;padding:0 3mm;\n  border-bottom:.15mm solid " + LINE + ";font-size:7.2pt;align-items:center;flex:0 0 auto;color:" + MUTED + "}\n.inv-strip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n\n.inv-carry{\n  display:flex;align-items:center;justify-content:space-between;gap:3mm;padding:0 3mm;\n  border-bottom:.15mm solid " + LINE + ";font-size:7.4pt;flex:0 0 auto;overflow:hidden;\n}\n.inv-carry .bold{font-size:8.4pt}\n\n.inv-empty{\n  display:flex;align-items:center;justify-content:center;flex:0 0 auto;\n  border-bottom:.15mm solid " + LINE + ";font-size:7.4pt;color:" + MUTED + ";overflow:hidden;\n}\n\n.inv-items{flex:0 0 auto;display:flex;flex-direction:column;overflow:hidden;\n  border-bottom:.15mm solid " + LINE + "}\n.inv-items table{width:100%;border-collapse:collapse;table-layout:fixed}\n.inv-items th{\n  border-bottom:none;border-right:none;background:" + ACCENT + ";\n  font-size:6.8pt;text-transform:uppercase;letter-spacing:.03em;font-weight:700;\n  padding:0 1.2mm;overflow:hidden;color:#fff;\n}\n.inv-items td{\n  border-right:none;border-bottom:.15mm solid " + ROW_LINE + ";padding:0 1.2mm;\n  font-size:7.5pt;vertical-align:top;overflow:hidden;\n  line-height:var(--row-h,4.8mm);color:" + TEXT + ";\n}\n.inv-items th:last-child,.inv-items td:last-child{border-right:0}\n.inv-items tbody tr:nth-child(even) td{background:" + ROW_LINE + "}\n.inv-items .desc{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;\n  overflow-wrap:break-word;word-break:normal;hyphens:none}\n.inv-items tr.filler td{background:none;border-bottom:0}\n.inv-items tr.carry td{border-top:.3mm solid " + ACCENT + ";font-weight:700;font-size:7.4pt;background:none}\n\n.inv-foot{flex:0 0 auto;display:flex;flex-direction:column;overflow:hidden}\n.inv-tax{border-bottom:.15mm solid " + LINE + ";overflow:hidden;flex:0 0 auto}\n.inv-tax table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7pt}\n.inv-tax th,.inv-tax td{border-right:none;border-bottom:.15mm solid " + ROW_LINE + ";padding:0 1.2mm;overflow:hidden}\n.inv-tax th{font-size:6.5pt;text-transform:uppercase;font-weight:700;border-bottom:none;background:" + ACCENT + ";color:#fff}\n.inv-tax th:last-child,.inv-tax td:last-child{border-right:0}\n.inv-tax tfoot td{font-weight:700;border-top:.3mm solid " + ACCENT + ";border-bottom:0}\n\n.inv-totals{display:flex;border-bottom:.15mm solid " + LINE + ";flex:0 0 auto;overflow:hidden}\n.inv-totals .note{flex:1;padding:2mm 3mm;font-size:7pt;line-height:1.35;border-right:.15mm solid " + LINE + ";color:" + MUTED + "}\n.inv-totals .sums{flex:0 0 76mm;background:" + ACCENT_TINT + ";border-radius:1.6mm;margin:1.6mm 1.6mm 1.6mm 0;overflow:hidden}\n.inv-totals table{width:100%;border-collapse:collapse;font-size:7.6pt}\n.inv-totals td{padding:.6mm 2.6mm;border-bottom:.15mm solid #E0E7FF;color:" + TEXT + "}\n.inv-totals td:last-child{text-align:right;font-variant-numeric:tabular-nums;width:38mm}\n.inv-totals tr.grand td{font-size:9.8pt;font-weight:700;border-top:none;border-bottom:0;background:" + ACCENT + ";color:#fff;padding:1.4mm 2.6mm}\n\n.inv-words{padding:1.4mm 3mm;border-bottom:.15mm solid " + LINE + ";font-size:7.6pt;flex:0 0 auto;overflow:hidden;color:" + MUTED + "}\n.inv-words b{font-size:8pt;color:" + TEXT + "}\n\n.inv-bank{display:flex;flex:0 0 auto;overflow:hidden}\n.inv-bank .bank{flex:1;padding:1.6mm 3mm;border-right:.15mm solid " + LINE + ";font-size:7.2pt}\n.inv-bank .bank table{border-collapse:collapse;width:100%;max-width:80mm}\n.inv-bank .bank td{padding:.3mm 0;font-size:7.2pt;color:" + MUTED + "}\n.inv-bank .bank td:first-child{color:" + ACCENT + ";width:26mm}\n.inv-bank .terms{flex:1;padding:1.6mm 3mm;border-right:.15mm solid " + LINE + ";font-size:6.8pt;line-height:1.3;color:" + MUTED + "}\n.inv-bank .sign{flex:0 0 58mm;padding:1.6mm 3mm;display:flex;flex-direction:column;\n  justify-content:space-between;text-align:center;font-size:7.4pt;color:" + TEXT + "}\n.inv-bank .sign .img{flex:1;display:flex;align-items:center;justify-content:center;padding:.6mm 0}\n.inv-bank .sign .img img{max-height:12mm;max-width:30mm;object-fit:contain}\n\n.inv-pagefoot{display:flex;justify-content:space-between;padding:1.2mm 3mm;\n  border-top:none;font-size:6.6pt;align-items:center;flex:0 0 auto;background:" + DARK + ";color:" + ON_DARK_MUTED + "}\n";
+  var MODERN_FONT_LINKS = '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">';
+
   function buildDocument(data, company, kind) {
     var built = buildPagesHtml(data, company, kind);
     var title = String(built.invoice.meta.invoiceNo || built.invoice.doc.title).replace(/\//g, '-') +
       ' - ' + String(data.buyerName || 'Buyer').replace(/[^a-zA-Z0-9 ]/g, '').trim();
-    built.document = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' +
-      esc(title) + '</title><style>' + PAGE_STYLE + '</style></head><body>' +
+    var modern = data.printFormat === 'modern';
+    built.document = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      (modern ? MODERN_FONT_LINKS : '') + '<title>' +
+      esc(title) + '</title><style>' + (modern ? PAGE_STYLE_MODERN : PAGE_STYLE) + '</style></head><body>' +
       built.html + '</body></html>';
     return built;
   }
@@ -4890,7 +4929,7 @@ function numberToWords(price){
 // ── CHALLAN STATE ────────────────────────────────────────────────────────────
 let challanState = {
   challanNo:'', date:new Date().toISOString().split('T')[0],
-  refInvoiceNo:'', transport:'', notes:'',
+  refInvoiceNo:'', transport:'', notes:'', printFormat:'default',
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
   items:[], isSaved:false,
   buyerSearchTimeout:null, editMode:false, originalChallanNo:''
@@ -4909,10 +4948,11 @@ function openNewChallanPage(){
   // Reset state
   challanState={
     challanNo:'', date:new Date().toISOString().split('T')[0],
-    refInvoiceNo:'', transport:'', notes:'',
+    refInvoiceNo:'', transport:'', notes:'', printFormat:'default',
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     items:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalChallanNo:''
   };
+  const chFmtSel=document.getElementById('ch-print-format');if(chFmtSel)chFmtSel.value='default';
   const ctitle=document.getElementById('challan-page-title');if(ctitle)ctitle.textContent='New Delivery Challan';
   const clbl=document.getElementById('challan-save-btn-label');if(clbl)clbl.textContent='Save Challan';
   const ss=document.getElementById('challan-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
@@ -5090,7 +5130,8 @@ async function handleSaveChallan(){
     buyerAddress:challanState.buyer.address||'',
     buyerGstin:challanState.buyer.gstin||'',
     buyerState:challanState.buyer.state||'Maharashtra',
-    itemsJson:JSON.stringify(cleanItems)
+    itemsJson:JSON.stringify(cleanItems),
+    printFormat:challanState.printFormat||'default'
   };
 
   try{
@@ -5143,7 +5184,8 @@ async function handleUpdateChallanToSheets(){
     buyerAddress:challanState.buyer.address||'',
     buyerGstin:challanState.buyer.gstin||'',
     buyerState:challanState.buyer.state||'Maharashtra',
-    itemsJson:JSON.stringify(cleanItems)
+    itemsJson:JSON.stringify(cleanItems),
+    printFormat:challanState.printFormat||'default'
   };
 
   try{
@@ -5274,7 +5316,7 @@ function handlePrintChallan(){
     buyerState:challanState.buyer.state,
     buyerPhone:challanState.buyer.phone,
     buyerEmail:challanState.buyer.email,
-    items:cleanItems
+    items:cleanItems, printFormat:challanState.printFormat||'default'
   });
 }
 
@@ -5293,7 +5335,8 @@ async function reprintChallan(challanNo){
       transport:ch['Transport']||'',notes:ch['Notes']||'',
       buyerName:ch['Buyer Name'],buyerAddress:ch['Buyer Address'],
       buyerGstin:ch['Buyer GSTIN'],buyerState:ch['Buyer State']||'Maharashtra',
-      buyerPhone:ch['Buyer Phone']||'',buyerEmail:ch['Buyer Email']||'',items
+      buyerPhone:ch['Buyer Phone']||'',buyerEmail:ch['Buyer Email']||'',items,
+      printFormat:ch['Print Format']||'default'
     });
   }catch(e){showToast('Failed to load challan for print.','error');}
 }
@@ -5362,6 +5405,7 @@ async function editChallan(challanNo){
     challanState={
       challanNo:ch['Challan No']||'', date:toDateInputValue(ch['Date']),
       refInvoiceNo:ch['Ref Invoice No']||'', transport:ch['Transport']||'', notes:ch['Notes']||'',
+      printFormat:ch['Print Format']||'default',
       buyer:{name:ch['Buyer Name']||'',address:ch['Buyer Address']||'',gstin:ch['Buyer GSTIN']||'',state:ch['Buyer State']||'Maharashtra',phone:ch['Buyer Phone']||'',email:ch['Buyer Email']||''},
       items:[], isSaved:true, buyerSearchTimeout:null,
       editMode:true, originalChallanNo:ch['Challan No']||''
@@ -5371,6 +5415,7 @@ async function editChallan(challanNo){
     document.getElementById('ch-date').value=challanState.date;
     document.getElementById('ch-ref-inv').value=challanState.refInvoiceNo;
     document.getElementById('ch-transport').value=challanState.transport;
+    const chFmtSel2=document.getElementById('ch-print-format');if(chFmtSel2)chFmtSel2.value=challanState.printFormat;
     document.getElementById('ch-buyer-name').value=challanState.buyer.name;
     document.getElementById('ch-buyer-address').value=challanState.buyer.address;
     document.getElementById('ch-buyer-gstin').value=challanState.buyer.gstin;
@@ -5425,7 +5470,8 @@ function handlePreviewInvoice(){
     buyerPhone:invState.buyer.phone, buyerEmail:invState.buyer.email,
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
-    items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)}))
+    items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
+    printFormat:invState.invoiceMeta.printFormat||'default'
   });
 }
 
@@ -5443,14 +5489,14 @@ function handlePreviewChallan(){
     buyerState:challanState.buyer.state,
     buyerPhone:challanState.buyer.phone,
     buyerEmail:challanState.buyer.email,
-    items:cleanItems
+    items:cleanItems, printFormat:challanState.printFormat||'default'
   });
 }
 
 // ── QUOTATION STATE & HELPERS ─────────────────────────────────────────────────
 let quotState = {
   quotNo:'', date:new Date().toISOString().split('T')[0],
-  validUntil:'', refNo:'', notes:'',
+  validUntil:'', refNo:'', notes:'', printFormat:'default',
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
   lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
 };
@@ -5464,10 +5510,11 @@ function openNewQuotationPage(){
 
   quotState={
     quotNo:'', date:new Date().toISOString().split('T')[0],
-    validUntil:'', refNo:'', notes:'',
+    validUntil:'', refNo:'', notes:'', printFormat:'default',
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
   };
+  const qtFmtSel=document.getElementById('qt-print-format');if(qtFmtSel)qtFmtSel.value='default';
   const ss=document.getElementById('quot-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const qtitle=document.getElementById('quotation-page-title');if(qtitle)qtitle.textContent='New Quotation';
   const qlbl=document.getElementById('quot-save-btn-label');if(qlbl)qlbl.textContent='Save Quotation';
@@ -5700,7 +5747,8 @@ async function handleSaveQuotation(){
     subTotal:subTotal.toFixed(2),
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
-    itemsJson:JSON.stringify(cleanItems)
+    itemsJson:JSON.stringify(cleanItems),
+    printFormat:quotState.printFormat||'default'
   };
 
   try{
@@ -5766,7 +5814,8 @@ async function handleUpdateQuotationToSheets(){
     subTotal:subTotal.toFixed(2),
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
-    itemsJson:JSON.stringify(cleanItems)
+    itemsJson:JSON.stringify(cleanItems),
+    printFormat:quotState.printFormat||'default'
   };
 
   try{
@@ -5810,7 +5859,7 @@ async function editQuotation(quotNo){
     quotState={
       quotNo:qt['Quotation No']||'', date:toDateInputValue(qt['Date']),
       validUntil:qt['Valid Until']?toDateInputValue(qt['Valid Until']):'',
-      refNo:qt['Ref No']||'', notes:qt['Notes']||'',
+      refNo:qt['Ref No']||'', notes:qt['Notes']||'', printFormat:qt['Print Format']||'default',
       buyer:{name:qt['Buyer Name']||'',address:qt['Buyer Address']||'',gstin:qt['Buyer GSTIN']||'',state:qt['Buyer State']||'Maharashtra',phone:qt['Buyer Phone']||'',email:qt['Buyer Email']||''},
       lineItems:[], isSaved:true, buyerSearchTimeout:null,
       editMode:true, originalQuotNo:qt['Quotation No']||''
@@ -5820,6 +5869,7 @@ async function editQuotation(quotNo){
     document.getElementById('qt-date').value=quotState.date;
     document.getElementById('qt-valid-until').value=quotState.validUntil;
     document.getElementById('qt-ref-no').value=quotState.refNo;
+    const qtFmtSel2=document.getElementById('qt-print-format');if(qtFmtSel2)qtFmtSel2.value=quotState.printFormat;
     document.getElementById('qt-buyer-name').value=quotState.buyer.name;
     document.getElementById('qt-buyer-address').value=quotState.buyer.address;
     document.getElementById('qt-buyer-gstin').value=quotState.buyer.gstin;
@@ -5875,7 +5925,7 @@ function handlePreviewQuotation(){
     buyerState:quotState.buyer.state,
     buyerPhone:quotState.buyer.phone,
     buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default'
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -5907,7 +5957,7 @@ function handlePrintQuotation(){
     quotNo:quotState.quotNo,date:quotState.date,validUntil:quotState.validUntil,refNo:quotState.refNo,notes:quotState.notes,
     buyerName:quotState.buyer.name,buyerAddress:quotState.buyer.address,buyerGstin:quotState.buyer.gstin,
     buyerState:quotState.buyer.state,buyerPhone:quotState.buyer.phone,buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default'
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6046,7 +6096,7 @@ async function reprintQuotation(quotNo){
       buyerGstin:qt['Buyer GSTIN']||'', buyerState:qt['Buyer State']||'',
       buyerPhone:qt['Buyer Phone']||'', buyerEmail:qt['Buyer Email']||'',
       subTotal:parseFloat(qt['Sub Total']||0), taxTotal:parseFloat(qt['Tax Total']||0),
-      grandTotal:parseFloat(qt['Grand Total']||0), items
+      grandTotal:parseFloat(qt['Grand Total']||0), items, printFormat:qt['Print Format']||'default'
     };
     const htmlContent=buildQuotationHtml(printData);
     const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -7803,7 +7853,9 @@ async function reprintCertificate(certNo){
 // reprintCertificate). Mirrors the backend's buildCertificateHtml
 // dispatcher in backend/src/lib/certificateHtml.js — must stay in sync.
 function printCertificateHtml(data){
-  const htmlContent = (data.certFormat==='horizon') ? buildHorizonCertHtml(data) : buildDefaultCertHtml(data);
+  const htmlContent = data.certFormat==='horizon' ? buildHorizonCertHtml(data)
+    : data.certFormat==='modern' ? buildModernCertHtml(data)
+    : buildDefaultCertHtml(data);
 
   const old=document.getElementById('_print_frame_cert');if(old)old.parentNode.removeChild(old);
   const iframe=document.createElement('iframe');
@@ -8071,6 +8123,120 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
     ${COMPANY.address?`<div>Add. ${escapeHtml(COMPANY.address)}</div>`:''}
     <div>${COMPANY.phone?'Contact No. '+escapeHtml(COMPANY.phone)+' ':''}${COMPANY.email?'&nbsp;|&nbsp; E-mail: '+escapeHtml(COMPANY.email):''}</div>
   </div></div>
+</div>
+</body></html>`;
+}
+
+// "Modern" certificate format — clean sans-serif, single indigo accent, thin
+// soft border. Own markup/CSS, same pattern as Horizon Style above. Must
+// stay in sync with backend/src/lib/certificateHtml.js's
+// buildCertificateHtmlModern.
+function buildModernCertHtml(data){
+  const ACCENT='#4338CA', ACCENT_TINT='#EEF2FF', LINE='#E5E7EB', TEXT='#1F2937', MUTED='#6B7280';
+  const fmtD=fmtDMY(data.issueDate);
+  const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
+
+  const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+    ? `<div style="margin:0 auto 1mm;">
+         <img src="${COMPANY.stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
+         <img src="${COMPANY.signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
+       </div>`
+    : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
+
+  const items=(data.items&&data.items.length?data.items:[]);
+  const hasItemRemarks=items.some(it=>(it.remarks||'').toString().trim());
+  const itemsHtml = items.length
+    ? items.map(it=>`<tr><td>${escapeHtml(it.desc||'').replace(/\n/g,'<br/>')}</td>` +
+        `<td style="text-align:center;">${escapeHtml(it.qty||'')}</td>` +
+        `<td style="text-align:center;">${escapeHtml(it.unit||'')}</td>` +
+        (hasItemRemarks?`<td>${escapeHtml(it.remarks||'').replace(/\n/g,'<br/>')}</td>`:'') + '</tr>').join('')
+    : `<tr><td colspan="${hasItemRemarks?4:3}" style="text-align:center;color:${MUTED};">No items specified</td></tr>`;
+
+  const chips=[
+    {l:'Issue Date',v:fmtD},
+    fmtV?{l:'Valid Until',v:fmtV}:null,
+    data.refNo?{l:'Ref. No.',v:escapeHtml(data.refNo)}:null,
+    data.site?{l:'Site / Location',v:escapeHtml(data.site)}:null
+  ].filter(Boolean).map(c=>`<div class="mc-chip"><div class="mc-chip-l">${c.l}</div><div class="mc-chip-v">${c.v}</div></div>`).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page{size:A4 portrait;margin:0;}
+html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
+body{font-family:'Inter',Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT};background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.mc-page{width:210mm;height:297mm;margin:0 auto;background:#fff;display:flex;flex-direction:column;padding:14mm 16mm;box-sizing:border-box;border:.4mm solid ${LINE};}
+.mc-header{display:flex;align-items:center;justify-content:space-between;gap:6mm;border-bottom:.3mm solid ${LINE};padding-bottom:6mm;margin-bottom:6mm;}
+.mc-brand{display:flex;align-items:center;gap:4mm;}
+.mc-logo{flex:0 0 20mm;width:20mm;display:flex;align-items:center;justify-content:center;}
+.mc-logo img{max-width:20mm;max-height:16mm;object-fit:contain;}
+.mc-company{font-size:18px;font-weight:800;color:${TEXT};}
+.mc-company-sub{font-size:9px;color:${MUTED};margin-top:1mm;}
+.mc-badge{text-align:right;}
+.mc-badge-title{display:inline-block;background:${ACCENT};color:#fff;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:2mm 5mm;border-radius:8mm;}
+.mc-badge-no{font-size:9px;color:${MUTED};margin-top:2mm;}
+.mc-body{flex:1;}
+.mc-issued{text-align:center;margin:6mm 0;}
+.mc-issued-label{font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:1px;}
+.mc-recipient{font-size:22px;font-weight:800;color:${ACCENT};margin:2mm 0;}
+.mc-recipient-addr{font-size:10px;color:${MUTED};}
+.mc-chips{display:flex;justify-content:center;gap:4mm;flex-wrap:wrap;margin:5mm 0;}
+.mc-chip{background:${ACCENT_TINT};border-radius:2mm;padding:2mm 4mm;text-align:center;min-width:28mm;}
+.mc-chip-l{font-size:7.5px;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;}
+.mc-chip-v{font-size:10px;font-weight:700;color:${TEXT};margin-top:.6mm;}
+.mc-items{width:100%;border-collapse:collapse;margin:5mm 0;font-size:10px;}
+.mc-items th{border-bottom:.4mm solid ${ACCENT};padding:2mm 3mm;text-align:left;color:${ACCENT};text-transform:uppercase;font-size:9px;letter-spacing:0.3px;}
+.mc-items td{border-bottom:.15mm solid ${LINE};padding:2mm 3mm;color:${TEXT};vertical-align:top;}
+.mc-remarks{font-size:9px;color:${MUTED};margin-top:3mm;border-top:.2mm dashed ${LINE};padding-top:3mm;}
+.mc-footer{border-top:.3mm solid ${LINE};padding-top:5mm;margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;}
+.mc-sign{text-align:center;}
+.mc-sign-line{width:45mm;border-top:.3mm solid ${TEXT};margin:0 auto 1mm;}
+.mc-sign-label{font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:${MUTED};}
+.mc-seal{width:22mm;height:22mm;border:.4mm solid ${ACCENT};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;text-align:center;color:${ACCENT};text-transform:uppercase;letter-spacing:0.5px;}
+</style></head><body>
+<div class="mc-page"${COMPANY.watermark?` style="background-image:url('${COMPANY.watermark}');background-repeat:no-repeat;background-position:center center;background-size:60% auto;"`:''}>
+  <div class="mc-header">
+    <div class="mc-brand">
+      ${COMPANY.logo?`<div class="mc-logo"><img src="${COMPANY.logo}"></div>`:''}
+      <div><div class="mc-company">${escapeHtml(COMPANY.name||'')}</div>
+        <div class="mc-company-sub">${escapeHtml(COMPANY.address||'')}</div>
+        <div class="mc-company-sub">Ph: ${escapeHtml(COMPANY.phone||'')}${COMPANY.gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(COMPANY.gstin):''}</div>
+      </div>
+    </div>
+    <div class="mc-badge"><div class="mc-badge-title">Certificate</div>
+      <div class="mc-badge-no">No. ${escapeHtml(data.certNo||'-')} &middot; ${escapeHtml(data.certType||'Refilling')}</div>
+    </div>
+  </div>
+  <div class="mc-body">
+    <div class="mc-issued">
+      <div class="mc-issued-label">This is to certify that</div>
+      <div class="mc-recipient">${escapeHtml(data.recipientName||'-')}</div>
+      ${data.recipientAddress?`<div class="mc-recipient-addr">${escapeHtml(data.recipientAddress)}</div>`:''}
+    </div>
+    <div class="mc-chips">${chips}</div>
+    ${hasItemRemarks
+      ? `<table class="mc-items"><thead><tr>
+          <th style="width:46%;">Description of Work / Item</th><th style="width:12%;">Qty</th>
+          <th style="width:12%;">Unit</th><th style="width:30%;">Remarks</th>
+        </tr></thead><tbody>${itemsHtml}</tbody></table>`
+      : `<table class="mc-items"><thead><tr>
+          <th style="width:66%;">Description of Work / Item</th><th style="width:17%;">Qty</th>
+          <th style="width:17%;">Unit</th>
+        </tr></thead><tbody>${itemsHtml}</tbody></table>`}
+    ${data.remarks?`<div class="mc-remarks"><strong>Remarks:</strong> ${escapeHtml(data.remarks)}</div>`:''}
+  </div>
+  <div class="mc-footer">
+    <div class="mc-sign">${sigStampHtml}
+      <div class="mc-sign-line"></div>
+      <div class="mc-sign-label">Authorised Signatory</div>
+      <div style="font-size:9px;color:${MUTED};margin-top:1mm;">${escapeHtml(COMPANY.name||'')}</div>
+    </div>
+    ${!(COMPANY.stamp && COMPANY.signature)?`<div class="mc-seal">${COMPANY.stamp?`<img src="${COMPANY.stamp}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">`:'Company<br/>Seal'}</div>`:''}
+    <div style="text-align:right;font-size:9px;color:${MUTED};">
+      <div>This is a computer-generated certificate.</div>
+    </div>
+  </div>
 </div>
 </body></html>`;
 }
