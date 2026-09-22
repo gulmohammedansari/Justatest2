@@ -211,7 +211,7 @@
         </div>
         <div class="form-group full"><label>Display Name</label><input type="text" id="u-display-name"/></div>
         <div class="form-group"><label>Role</label>
-          <select id="u-role"><option>Admin</option><option>Staff</option></select>
+          <select id="u-role"><option>Admin</option><option>Biller</option><option>Viewer</option></select>
         </div>
         <div class="form-group"><label>Status</label>
           <select id="u-status"><option>Active</option><option>Suspended</option></select>
@@ -531,7 +531,7 @@ function openEditUser(idx){
   uEl.value=u['Username']||''; uEl.disabled=true;
   document.getElementById('u-username-note').textContent='(cannot be changed)';
   document.getElementById('u-display-name').value=u['Display Name']||'';
-  document.getElementById('u-role').value=u['Role']||'Admin';
+  document.getElementById('u-role').value=(u['Role']==='Staff')?'Biller':(u['Role']||'Admin');
   document.getElementById('u-status').value=u['Status']||'Active';
   document.getElementById('u-password').value='';
   document.getElementById('u-password-label').textContent='New Password (leave blank to keep current)';

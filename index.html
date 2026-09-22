@@ -216,6 +216,15 @@
   .fmt-name { font-size: 10px; color: var(--text3); }
   .fmt-opt input:checked ~ .fmt-name { color: var(--accent); font-weight: 600; }
 
+  /* ROLE-BASED UI — .role-admin-only elements (Delete buttons) only show for
+     Admin; Viewer additionally loses every create/save button (.btn-primary/
+     .btn-success). The backend is the real enforcement (Viewer's POSTs are
+     rejected outright) — this is just keeping the UI honest about what will
+     actually work. */
+  body:not(.role-admin) .role-admin-only { display: none !important; }
+  body.role-viewer .btn-primary, body.role-viewer .btn-success { display: none !important; }
+  .r { text-align: right; }
+
   /* ITEMS TABLE inside invoice page */
   .items-table { width: 100%; border-collapse: collapse; }
   .items-table th { font-size: 11px; font-weight: 600; color: var(--text3); padding: 10px 8px; background: rgba(255,255,255,0.025); border-bottom: 1px solid var(--border); text-align: left; }
@@ -957,19 +966,19 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Insights</div>
-      <button class="nav-item" onclick="navigate('reports')">
+      <button class="nav-item" id="nav-reports" onclick="navigate('reports')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports
       </button>
-      <button class="nav-item" onclick="navigate('deletionlog')">
+      <button class="nav-item" id="nav-deletionlog" onclick="navigate('deletionlog')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Deletion Log
       </button>
     </div>
     <div class="nav-section">
       <div class="nav-label">Account</div>
-      <button class="nav-item" onclick="navigate('manageusers')">
+      <button class="nav-item" id="nav-manageusers" onclick="navigate('manageusers')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Manage Users
       </button>
-      <button class="nav-item" onclick="navigate('settings')">
+      <button class="nav-item" id="nav-settings" onclick="navigate('settings')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
       </button>
       <button class="nav-item" onclick="doLogout()" style="color:var(--danger);">
@@ -1861,9 +1870,19 @@
   <div id="page-dashboard" class="page">
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">Total Invoiced</div><div class="stat-value" id="dash-total">₹0</div><div class="stat-sub" id="dash-total-sub">Loading…</div></div>
-      <div class="stat-card"><div class="stat-label">Collected</div><div class="stat-value">₹0</div><div class="stat-sub">Payments received</div></div>
+      <div class="stat-card"><div class="stat-label">Collected</div><div class="stat-value" id="dash-collected">₹0</div><div class="stat-sub">Payments received</div></div>
       <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value" id="dash-outstanding">₹0</div><div class="stat-sub" id="dash-out-sub">pending</div></div>
       <div class="stat-card"><div class="stat-label">Total Invoices</div><div class="stat-value" id="dash-count">0</div><div class="stat-sub">In database</div></div>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:20px;align-items:stretch;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header"><div class="card-title">Revenue — Last 6 Months</div></div>
+        <div id="dash-trend-chart" style="padding:16px 20px;"></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header"><div class="card-title">Top Customers</div></div>
+        <div id="dash-top-customers" style="padding:8px 0;"></div>
+      </div>
     </div>
     <div class="card" id="dash-amc-widget" style="margin-bottom:20px;">
       <div class="card-header">
@@ -2067,7 +2086,52 @@
 
   <!-- LEDGER PAGE -->
   <div id="page-ledger" class="page page-hidden">
-    <div class="card"><div class="empty-state"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><h3>Ledger coming soon</h3><p>Transaction ledger will be available here.</p></div></div>
+    <div class="filter-bar">
+      <div class="form-group" style="min-width:280px;">
+        <select id="ledger-buyer-select" onchange="renderLedgerForBuyer(this.value)">
+          <option value="">Select a customer…</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="openRecordPaymentModal('')">+ Record Payment</button>
+    </div>
+    <div class="stat-grid" id="ledger-summary" style="display:none;margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Total Invoiced</div><div class="stat-value" id="ledger-total-invoiced">₹0</div></div>
+      <div class="stat-card"><div class="stat-label">Total Paid</div><div class="stat-value" id="ledger-total-paid">₹0</div></div>
+      <div class="stat-card"><div class="stat-label">Balance Due</div><div class="stat-value" id="ledger-balance">₹0</div></div>
+    </div>
+    <div class="card" id="ledger-empty">
+      <div class="empty-state"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><h3>Select a customer</h3><p>Choose a customer above to see their invoices, payments and running balance.</p></div>
+    </div>
+    <div class="card" id="ledger-table-card" style="display:none;">
+      <table><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th class="r">Debit (₹)</th><th class="r">Credit (₹)</th><th class="r">Balance (₹)</th></tr></thead>
+      <tbody id="ledger-body"></tbody></table>
+    </div>
+  </div>
+
+  <!-- RECORD PAYMENT MODAL -->
+  <div class="modal-overlay" id="payment-modal">
+    <div class="modal" style="width:480px;">
+      <div class="modal-header">
+        <div class="modal-title">Record Payment</div>
+        <button class="close-btn" onclick="closeModal('payment-modal')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full"><label>Customer <span style="color:var(--danger);">*</span></label><input type="text" id="pmt-buyer"/></div>
+          <div class="form-group"><label>Amount (₹) <span style="color:var(--danger);">*</span></label><input type="number" id="pmt-amount" step="0.01" min="0"/></div>
+          <div class="form-group"><label>Date</label><input type="date" id="pmt-date"/></div>
+          <div class="form-group"><label>Mode</label>
+            <select id="pmt-mode"><option>Cash</option><option>Bank Transfer</option><option>UPI</option><option>Cheque</option><option>Other</option></select>
+          </div>
+          <div class="form-group"><label>Against Invoice No.</label><input type="text" id="pmt-invoice" placeholder="Optional"/></div>
+          <div class="form-group full"><label>Notes</label><input type="text" id="pmt-notes" placeholder="Optional"/></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('payment-modal')">Cancel</button>
+        <button class="btn btn-primary" id="pmt-save-btn" onclick="saveLedgerPayment()">Save Payment</button>
+      </div>
+    </div>
   </div>
 
   <!-- CUSTOMERS PAGE -->
@@ -2102,7 +2166,12 @@
 
   <!-- REPORTS PAGE -->
   <div id="page-reports" class="page page-hidden">
-    <div class="report-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="filter-bar" style="margin-bottom:16px;">
+      <div class="form-group"><label>From</label><input type="date" id="report-from-date" onchange="if(currentReportType)showReport(currentReportType);"/></div>
+      <div class="form-group"><label>To</label><input type="date" id="report-to-date" onchange="if(currentReportType)showReport(currentReportType);"/></div>
+      <button class="btn" style="align-self:flex-end;" onclick="document.getElementById('report-from-date').value='';document.getElementById('report-to-date').value='';if(currentReportType)showReport(currentReportType);">Clear</button>
+    </div>
+    <div class="report-grid" style="grid-template-columns:repeat(5,1fr);">
       <div class="report-card" onclick="showReport('sales-register')">
         <div class="report-icon" style="background:var(--accent-light);"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg></div>
         <div class="report-name">Sales Register</div>
@@ -2122,6 +2191,11 @@
         <div class="report-icon" style="background:var(--success-bg);"><svg width="20" height="20" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
         <div class="report-name">Month-wise Sales</div>
         <div class="report-desc">Total invoiced, tax and grand total grouped by month.</div>
+      </div>
+      <div class="report-card" onclick="showReport('hsn-summary')">
+        <div class="report-icon" style="background:var(--info-bg);"><svg width="20" height="20" fill="none" stroke="var(--info)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+        <div class="report-name">HSN Summary</div>
+        <div class="report-desc">Qty, taxable value and tax grouped by HSN/SAC code — GSTR-1 Table 12.</div>
       </div>
     </div>
     <div id="report-output" style="margin-top:24px;display:none;">
@@ -2426,7 +2500,7 @@
       <div class="form-grid">
         <div class="form-group full"><label>Username <span style="color:var(--danger);">*</span></label><input type="text" id="mtu-username" placeholder="e.g. staff1"/></div>
         <div class="form-group full"><label>Display Name</label><input type="text" id="mtu-display-name" placeholder="e.g. Front Desk"/></div>
-        <div class="form-group"><label>Role</label><select id="mtu-role"><option value="Admin">Admin</option><option value="Staff">Staff</option></select></div>
+        <div class="form-group"><label>Role</label><select id="mtu-role"><option value="Admin">Admin</option><option value="Biller">Biller</option><option value="Viewer">Viewer</option></select></div>
         <div class="form-group"><label>Status</label><select id="mtu-status"><option value="Active">Active</option><option value="Suspended">Suspended</option></select></div>
         <div class="form-group full"><label id="mtu-password-label">Password <span style="color:var(--danger);">*</span></label><input type="password" id="mtu-password" placeholder="Leave blank to keep unchanged (edit mode)"/></div>
       </div>
@@ -2451,7 +2525,7 @@
       <button class="btn" onclick="sendInvoiceWhatsapp(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo,_viewedInvoiceData&&_viewedInvoiceData.buyerPhone)">WhatsApp</button>
       <button class="btn" onclick="sendInvoiceEmailToBuyer(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo,_viewedInvoiceData&&_viewedInvoiceData.buyerEmail)">Email</button>
       <button class="btn btn-success" onclick="printViewedInvoice()">Print / PDF</button>
-      <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo)">Delete</button>
+      <button class="btn role-admin-only" style="color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice(_viewedInvoiceData&&_viewedInvoiceData.invoiceNo)">Delete</button>
     </div>
   </div>
 </div>
@@ -2469,7 +2543,7 @@
       <button class="btn btn-success" onclick="printViewedChallan()">Print / PDF</button>
       <button class="btn" onclick="sendChallanWhatsapp(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerPhone)">WhatsApp</button>
       <button class="btn" onclick="sendChallanEmailToBuyer(_viewedChallanData&&_viewedChallanData.challanNo,_viewedChallanData&&_viewedChallanData.buyerEmail)">Email</button>
-      <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteChallan(_viewedChallanData&&_viewedChallanData.challanNo)">Delete</button>
+      <button class="btn role-admin-only" style="color:var(--danger);border-color:var(--danger);" onclick="deleteChallan(_viewedChallanData&&_viewedChallanData.challanNo)">Delete</button>
     </div>
   </div>
 </div>
@@ -2573,6 +2647,7 @@ async function doLogin(){
     if(data.success){
       sessionStorage.setItem('gme_token',data.token); sessionStorage.setItem('gme_username',data.username);
       sessionStorage.setItem('gme_display',data.displayName||data.username);
+      sessionStorage.setItem('gme_role',data.role||'Admin');
       if(data.company){
         COMPANY=Object.assign({},COMPANY,data.company);
         sessionStorage.setItem('gme_company',JSON.stringify(COMPANY));
@@ -2895,8 +2970,25 @@ function showApp(displayName){
   const uname=displayName||sessionStorage.getItem('gme_display')||'Admin';
   document.getElementById('sidebar-username').textContent=uname;
   document.getElementById('sidebar-avatar').textContent=uname.substring(0,2).toUpperCase();
+  applyRoleUI();
   applyCompanyToUI();
   loadDashboard();
+}
+
+// Admin: everything. Biller: create/edit/print/send documents, no Settings/
+// Reports/Manage Users/Deletion Log/delete. Viewer: read-only everywhere —
+// can browse every page including Reports, but every create/save/delete
+// button is hidden (and the backend rejects the POST regardless, see
+// index.js's role==='Viewer' check — this is just keeping the UI honest).
+function currentRole(){ return sessionStorage.getItem('gme_role')||'Admin'; }
+function applyRoleUI(){
+  const role=currentRole();
+  document.body.classList.remove('role-admin','role-biller','role-viewer');
+  document.body.classList.add('role-'+role.toLowerCase());
+  const adminOnlyNav=['nav-settings','nav-manageusers','nav-deletionlog'];
+  adminOnlyNav.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(role==='Admin')?'':'none';});
+  const reportsNav=document.getElementById('nav-reports');
+  if(reportsNav) reportsNav.style.display=(role==='Biller')?'none':'';
 }
 
 function doLogout(){
@@ -2932,6 +3024,10 @@ function closeSidebar(){
 }
 
 function navigate(page){
+  const role=currentRole();
+  const adminOnlyPages=['settings','manageusers','deletionlog'];
+  if(role!=='Admin'&&adminOnlyPages.includes(page)){ showToast('You do not have access to this page.','error'); page='dashboard'; }
+  else if(role==='Biller'&&page==='reports'){ showToast('You do not have access to this page.','error'); page='dashboard'; }
   closeSidebar();
   // Hide all full-page forms and restore topbar
   ['page-new-invoice','page-new-challan','page-new-quotation','page-new-creditnote','page-new-certificate'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('page-hidden');});
@@ -2981,6 +3077,7 @@ function navigate(page){
   if(page==='items')       loadAndRenderItems();
   if(page==='deletionlog') loadAndRenderDeletionLog();
   if(page==='manageusers') loadAndRenderMyTenantUsers();
+  if(page==='ledger')      loadAndRenderLedger();
 }
 
 // ── NEW INVOICE PAGE ──────────────────────────────────────────────────────────
@@ -3050,17 +3147,23 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('cl
 async function loadDashboard(){
   const token=sessionStorage.getItem('gme_token')||'';
   try{
-    const res=await fetch(`${googleScriptUrl}?action=getDashboard&token=${encodeURIComponent(token)}`);
-    const data=await res.json();
-    if(data.sessionExpired){doLogout();return;}
+    const [res,payRes]=await Promise.all([
+      fetch(`${googleScriptUrl}?action=getDashboard&token=${encodeURIComponent(token)}`).then(r=>r.json()),
+      fetch(`${googleScriptUrl}?action=getPaymentsData&token=${encodeURIComponent(token)}`).then(r=>r.json())
+    ]);
+    const data=res;
+    if(data.sessionExpired||payRes.sessionExpired){doLogout();return;}
     liveInvoices=data.invoices||[];
+    livePayments=payRes.payments||[];
     if(liveInvoices.length){
       const total=liveInvoices.reduce((a,i)=>a+(parseFloat(i['Grand Total'])||0),0);
-      const tax=liveInvoices.reduce((a,i)=>a+(parseFloat(i['Tax Amount'])||0),0);
+      const collected=livePayments.reduce((a,p)=>a+(parseFloat(p['Amount'])||0),0);
+      const outstanding=Math.max(0,total-collected);
       document.getElementById('dash-total').textContent='₹'+total.toLocaleString('en-IN');
       document.getElementById('dash-total-sub').textContent=liveInvoices.length+' invoice(s)';
-      document.getElementById('dash-outstanding').textContent='₹'+total.toLocaleString('en-IN');
-      document.getElementById('dash-out-sub').textContent=liveInvoices.length+' pending';
+      document.getElementById('dash-collected').textContent='₹'+collected.toLocaleString('en-IN');
+      document.getElementById('dash-outstanding').textContent='₹'+outstanding.toLocaleString('en-IN');
+      document.getElementById('dash-out-sub').textContent=(outstanding>0?'pending':'all collected');
       document.getElementById('dash-count').textContent=liveInvoices.length;
       const recent=[...liveInvoices].reverse().slice(0,5);
       document.getElementById('recent-invoices-body').innerHTML=recent.map(inv=>`
@@ -3072,17 +3175,71 @@ async function loadDashboard(){
           <td>₹${parseFloat(inv['Tax Amount']||0).toLocaleString('en-IN')}</td>
         </tr>`).join('');
     }else{
-      ['dash-total','dash-outstanding'].forEach(id=>document.getElementById(id).textContent='₹0');
+      ['dash-total','dash-collected','dash-outstanding'].forEach(id=>document.getElementById(id).textContent='₹0');
       document.getElementById('dash-total-sub').textContent='0 invoices';
       document.getElementById('dash-out-sub').textContent='0 pending';
       document.getElementById('dash-count').textContent='0';
       document.getElementById('recent-invoices-body').innerHTML='<tr><td colspan="5"><div class="empty-state" style="padding:30px;"><h3>No invoices yet</h3><p>Create your first invoice using the New Invoice button.</p></div></td></tr>';
     }
+    renderDashboardTrend(liveInvoices);
+    renderDashboardTopCustomers(liveInvoices);
   }catch(e){
     document.getElementById('recent-invoices-body').innerHTML='<tr><td colspan="5" class="loading-row">Could not load data. Check connection.</td></tr>';
   }
   // Load AMC renewal widget (local, always available)
   loadDashboardAMC();
+}
+
+function renderDashboardTrend(invoices){
+  const el=document.getElementById('dash-trend-chart');
+  if(!el) return;
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('en-IN',{month:'short'}),total:0});
+  }
+  const byKey={}; months.forEach(m=>{byKey[m.key]=m;});
+  invoices.forEach(i=>{
+    const dt=new Date(i['Date']||'');
+    if(isNaN(dt)) return;
+    const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+    if(byKey[key]) byKey[key].total+=parseFloat(i['Grand Total']||0);
+  });
+  const max=Math.max(...months.map(m=>m.total),1);
+  const w=320,h=140,barW=32,gap=(w-barW*6)/7;
+  let bars='';
+  months.forEach((m,idx)=>{
+    const x=gap+idx*(barW+gap);
+    const barH=Math.max(Math.round((m.total/max)*90),m.total>0?3:0);
+    const y=110-barH;
+    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="var(--accent)" opacity="${m.total?1:0.25}"><title>${m.label}: ₹${m.total.toLocaleString('en-IN')}</title></rect>`;
+    bars+=`<text x="${x+barW/2}" y="128" text-anchor="middle" font-size="10" fill="var(--text3)">${m.label}</text>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;">${bars}</svg>`;
+}
+
+function renderDashboardTopCustomers(invoices){
+  const el=document.getElementById('dash-top-customers');
+  if(!el) return;
+  const map={};
+  invoices.forEach(i=>{
+    const n=i['Buyer Name']||'Unknown';
+    map[n]=(map[n]||0)+(parseFloat(i['Grand Total'])||0);
+  });
+  const top=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!top.length){ el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No invoices yet</div>'; return; }
+  const max=top[0][1]||1;
+  el.innerHTML=top.map(([name,total])=>`
+    <div style="padding:8px 20px;">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+        <span style="font-weight:600;color:var(--text);">${escapeHtml(name)}</span>
+        <span style="color:var(--text2);">₹${total.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
+        <div style="background:var(--accent);height:100%;width:${Math.round(total/max*100)}%;"></div>
+      </div>
+    </div>`).join('');
 }
 
 // ── INVOICES TABLE (live from GAS) ─────────────────────────────────────────────
@@ -3122,7 +3279,7 @@ function renderInvoicesTable(data){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintInvoice('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendInvoiceWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendInvoiceEmailToBuyer('${no}','${email}')">Email</button>
-        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice('${no}')">Delete</button>
+        <button class="btn role-admin-only" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteInvoice('${no}')">Delete</button>
       </td>
     </tr>`;}).join('');
 }
@@ -3130,6 +3287,128 @@ function renderInvoicesTable(data){
 function filterInvoices(val){
   const q=val.toLowerCase();
   renderInvoicesTable(liveInvoices.filter(i=>(i['Invoice No']||'').toLowerCase().includes(q)||(i['Buyer Name']||'').toLowerCase().includes(q)));
+}
+
+// ── LEDGER (Invoices + Credit/Debit Notes as debits/credits, Payments as credits) ──
+let livePayments=[];
+async function loadAndRenderLedger(){
+  const sel=document.getElementById('ledger-buyer-select');
+  sel.innerHTML='<option value="">Loading…</option>';
+  const token=sessionStorage.getItem('gme_token')||'';
+  try{
+    const [invRes,noteRes,payRes]=await Promise.all([
+      liveInvoices.length?Promise.resolve({invoices:liveInvoices}):fetch(`${googleScriptUrl}?action=getDashboard&token=${encodeURIComponent(token)}`).then(r=>r.json()),
+      fetch(`${googleScriptUrl}?action=getCreditDebitNotesData&token=${encodeURIComponent(token)}`).then(r=>r.json()),
+      fetch(`${googleScriptUrl}?action=getPaymentsData&token=${encodeURIComponent(token)}`).then(r=>r.json())
+    ]);
+    if(invRes.sessionExpired||noteRes.sessionExpired||payRes.sessionExpired){doLogout();return;}
+    if(invRes.invoices) liveInvoices=invRes.invoices;
+    liveCreditNotes=noteRes.notes||liveCreditNotes;
+    livePayments=payRes.payments||[];
+  }catch(e){}
+
+  const names=new Set();
+  liveInvoices.forEach(i=>{if(i['Buyer Name'])names.add(i['Buyer Name']);});
+  liveCreditNotes.forEach(n=>{if(n['Buyer Name'])names.add(n['Buyer Name']);});
+  livePayments.forEach(p=>{if(p['Buyer Name'])names.add(p['Buyer Name']);});
+  const sorted=[...names].sort((a,b)=>a.localeCompare(b));
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Select a customer…</option>'+sorted.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if(prev&&sorted.includes(prev)){ sel.value=prev; renderLedgerForBuyer(prev); }
+  else{
+    document.getElementById('ledger-summary').style.display='none';
+    document.getElementById('ledger-table-card').style.display='none';
+    document.getElementById('ledger-empty').style.display='';
+  }
+}
+
+function renderLedgerForBuyer(name){
+  if(!name){
+    document.getElementById('ledger-summary').style.display='none';
+    document.getElementById('ledger-table-card').style.display='none';
+    document.getElementById('ledger-empty').style.display='';
+    return;
+  }
+  const txns=[];
+  liveInvoices.filter(i=>i['Buyer Name']===name).forEach(i=>txns.push({
+    date:i['Date']||'', sortDate:new Date(i['Date']||0).getTime()||0, type:'Invoice', ref:i['Invoice No']||'',
+    debit:parseFloat(i['Grand Total']||0), credit:0
+  }));
+  liveCreditNotes.filter(n=>n['Buyer Name']===name).forEach(n=>{
+    const amt=parseFloat(n['Grand Total']||0);
+    const isCredit=(n['Note Type']||'CREDIT')==='CREDIT';
+    txns.push({
+      date:n['Date']||'', sortDate:new Date(n['Date']||0).getTime()||0,
+      type:isCredit?'Credit Note':'Debit Note', ref:n['Note No']||'',
+      debit:isCredit?0:amt, credit:isCredit?amt:0
+    });
+  });
+  livePayments.filter(p=>p['Buyer Name']===name).forEach(p=>txns.push({
+    date:p['Date']||'', sortDate:new Date(p['Date']||0).getTime()||0,
+    type:'Payment ('+(p['Mode']||'Cash')+')', ref:p['Against Invoice No']||p['Notes']||'-',
+    debit:0, credit:parseFloat(p['Amount']||0)
+  }));
+  txns.sort((a,b)=>a.sortDate-b.sortDate);
+
+  let balance=0, totalDebit=0, totalCredit=0;
+  const rows=txns.map(t=>{
+    balance+=t.debit-t.credit; totalDebit+=t.debit; totalCredit+=t.credit;
+    return `<tr>
+      <td>${fmtDate(t.date)}</td>
+      <td>${escapeHtml(t.type)}</td>
+      <td>${escapeHtml(t.ref)}</td>
+      <td class="r">${t.debit?'₹'+t.debit.toLocaleString('en-IN',{minimumFractionDigits:2}):''}</td>
+      <td class="r">${t.credit?'₹'+t.credit.toLocaleString('en-IN',{minimumFractionDigits:2}):''}</td>
+      <td class="r" style="font-weight:600;">₹${balance.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ledger-body').innerHTML=rows||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">No transactions for this customer yet.</td></tr>';
+  document.getElementById('ledger-total-invoiced').textContent='₹'+totalDebit.toLocaleString('en-IN');
+  document.getElementById('ledger-total-paid').textContent='₹'+totalCredit.toLocaleString('en-IN');
+  document.getElementById('ledger-balance').textContent='₹'+balance.toLocaleString('en-IN');
+  document.getElementById('ledger-summary').style.display='';
+  document.getElementById('ledger-table-card').style.display='';
+  document.getElementById('ledger-empty').style.display='none';
+}
+
+function openRecordPaymentModal(buyerName){
+  document.getElementById('pmt-buyer').value=buyerName||document.getElementById('ledger-buyer-select').value||'';
+  document.getElementById('pmt-amount').value='';
+  document.getElementById('pmt-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pmt-mode').value='Cash';
+  document.getElementById('pmt-invoice').value='';
+  document.getElementById('pmt-notes').value='';
+  openModal('payment-modal');
+}
+
+function saveLedgerPayment(){
+  const buyerName=document.getElementById('pmt-buyer').value.trim();
+  const amount=parseFloat(document.getElementById('pmt-amount').value)||0;
+  if(!buyerName){showToast('Customer name is required.','error');return;}
+  if(!(amount>0)){showToast('Enter a valid amount.','error');return;}
+  const btn=document.getElementById('pmt-save-btn'); btn.disabled=true; btn.textContent='Saving…';
+  const data={
+    buyerName, amount,
+    date:document.getElementById('pmt-date').value,
+    mode:document.getElementById('pmt-mode').value,
+    againstInvoiceNo:document.getElementById('pmt-invoice').value.trim(),
+    notes:document.getElementById('pmt-notes').value.trim()
+  };
+  const payload={action:'savePayment',token:sessionStorage.getItem('gme_token')||'',data};
+  fetch(googleScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)})
+    .then(r=>r.json()).then(d=>{
+      btn.disabled=false; btn.textContent='Save Payment';
+      if(d.sessionExpired){doLogout();return;}
+      if(!d.success){showToast(d.message||'Failed to save payment.','error');return;}
+      showToast('Payment recorded.','success');
+      closeModal('payment-modal');
+      loadAndRenderLedger().then(()=>{
+        const s=document.getElementById('ledger-buyer-select');
+        s.value=buyerName; renderLedgerForBuyer(buyerName);
+      });
+      loadDashboard();
+    }).catch(()=>{btn.disabled=false; btn.textContent='Save Payment'; showToast('Network error.','error');});
 }
 
 // ── CUSTOMERS (live from GAS Buyers sheet) ────────────────────────────────────
@@ -3293,17 +3572,32 @@ function showReport(type){
     'sales-register':'Sales Register',
     'gst-summary':'GSTR-1 / Tax Summary',
     'customer-wise':'Customer-wise Sales',
-    'month-wise':'Month-wise Sales'
+    'month-wise':'Month-wise Sales',
+    'hsn-summary':'HSN Summary'
   };
   const title = titles[type]||type;
   document.getElementById('report-title').textContent = title;
   currentReportData.title = title;
 
   let html='';
-  const invs=liveInvoices;
+  const fromVal=document.getElementById('report-from-date').value;
+  const toVal=document.getElementById('report-to-date').value;
+  const fromDate=fromVal?new Date(fromVal):null;
+  const toDate=toVal?new Date(toVal):null;
+  if(toDate) toDate.setHours(23,59,59,999);
+  const invs=liveInvoices.filter(i=>{
+    if(!fromDate&&!toDate) return true;
+    const dt=new Date(i['Date']||'');
+    if(isNaN(dt)) return true;
+    if(fromDate&&dt<fromDate) return false;
+    if(toDate&&dt>toDate) return false;
+    return true;
+  });
 
   if(!invs.length){
-    html='<div class="empty-state" style="padding:40px;"><h3>No invoice data yet</h3><p>Invoices saved to Google Sheets will appear in reports.</p></div>';
+    html=(fromDate||toDate)
+      ? '<div class="empty-state" style="padding:40px;"><h3>No invoices in this date range</h3><p>Try a wider From/To range or clear the filter.</p></div>'
+      : '<div class="empty-state" style="padding:40px;"><h3>No invoice data yet</h3><p>Invoices saved to Google Sheets will appear in reports.</p></div>';
     currentReportData = {title, headers:[], rows:[]};
 
   }else if(type==='sales-register'){
@@ -3466,6 +3760,53 @@ function showReport(type){
         <td style="color:var(--accent);">₹${gtTotal.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
       </tr>
     </tbody></table>`;
+
+  }else if(type==='hsn-summary'){
+    const map={};
+    invs.forEach(i=>{
+      let items=[];
+      try{ items=JSON.parse(i['Items (JSON)']||'[]'); }catch(e){}
+      items.forEach(it=>{
+        const hsn=it.hsn||'-';
+        const gstPct=parseFloat(it.gstPct)||0;
+        const key=hsn+'|'+gstPct;
+        const qty=parseFloat(it.qty)||0;
+        const taxable=parseFloat(it.amount)||(qty*(parseFloat(it.rate)||0));
+        if(!map[key]) map[key]={hsn,gstPct,qty:0,unit:it.unit||'Nos',taxable:0};
+        map[key].qty+=qty;
+        map[key].taxable+=taxable;
+      });
+    });
+    const sorted=Object.values(map).sort((a,b)=>String(a.hsn).localeCompare(String(b.hsn))||a.gstPct-b.gstPct);
+    const headers=['HSN/SAC','GST %','Qty','Unit','Taxable Value (₹)','Tax Amount (₹)'];
+    const rows=sorted.map(v=>[v.hsn,v.gstPct,v.qty,v.unit,v.taxable.toFixed(2),(v.taxable*v.gstPct/100).toFixed(2)]);
+    const gtQty=sorted.reduce((a,v)=>a+v.qty,0);
+    const gtTaxable=sorted.reduce((a,v)=>a+v.taxable,0);
+    const gtTaxAmt=sorted.reduce((a,v)=>a+v.taxable*v.gstPct/100,0);
+    rows.push(['TOTAL','',gtQty,'',gtTaxable.toFixed(2),gtTaxAmt.toFixed(2)]);
+    currentReportData={title,headers,rows};
+
+    if(!sorted.length){
+      html='<div class="empty-state" style="padding:40px;"><h3>No HSN data yet</h3><p>Line items need an HSN/SAC code entered on the invoice.</p></div>';
+    }else{
+      html=`<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+        ${sorted.map(v=>`<tr>
+          <td style="font-weight:600;font-family:monospace;">${escapeHtml(v.hsn)}</td>
+          <td>${v.gstPct}%</td>
+          <td style="text-align:center;">${v.qty}</td>
+          <td>${escapeHtml(v.unit)}</td>
+          <td>₹${v.taxable.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+          <td style="font-weight:600">₹${(v.taxable*v.gstPct/100).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        </tr>`).join('')}
+        <tr style="background:var(--accent-light);font-weight:700;">
+          <td colspan="2">TOTAL</td>
+          <td style="text-align:center;">${gtQty}</td>
+          <td></td>
+          <td>₹${gtTaxable.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+          <td style="color:var(--accent);">₹${gtTaxAmt.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        </tr>
+      </tbody></table>`;
+    }
   }
 
   document.getElementById('report-body').innerHTML=html;
@@ -5291,7 +5632,7 @@ function renderChallansTable(challans){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintChallan('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendChallanEmailToBuyer('${no}','${email}')">Email</button>
-        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteChallan('${no}')">Delete</button>
+        <button class="btn role-admin-only" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteChallan('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -6071,7 +6412,7 @@ function renderQuotationsTable(quotations){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintQuotation('${no}')">Reprint</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendQuotationEmailToBuyer('${no}','${email}')">Email</button>
-        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteQuotation('${no}')">Delete</button>
+        <button class="btn role-admin-only" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteQuotation('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -6792,7 +7133,7 @@ function renderAMCTable(list){
       <td style="white-space:nowrap;">
         <button class="btn" title="View" style="padding:5px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;" onclick="viewAMC(${origIdx})"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         <button class="btn" title="Edit" style="padding:5px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;" onclick="editAMC(${origIdx})"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-        <button class="btn" title="Delete" style="padding:5px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteAMC('${safeNo}')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button>
+        <button class="btn role-admin-only" title="Delete" style="padding:5px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteAMC('${safeNo}')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button>
       </td>
     </tr>`;
   }).join('');
@@ -7608,7 +7949,7 @@ function renderCertificatesTable(certs){
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="reprintCertificate('${no}')">Print</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateWhatsapp('${no}','${phone}')">WhatsApp</button>
         <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="sendCertificateEmailToBuyer('${no}','${email}')">Email</button>
-        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteCertificate('${no}')">Delete</button>
+        <button class="btn role-admin-only" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteCertificate('${no}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -7745,7 +8086,7 @@ function renderMyTenantUsersTable(list){
       <td style="font-size:12px;color:var(--text3);">${escapeHtml(u['Created Date'])||'-'}</td>
       <td style="white-space:nowrap;">
         <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="openEditMyTenantUser('${uname}')">Edit</button>
-        <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteMyTenantUser('${uname}')">Delete</button>
+        <button class="btn role-admin-only" style="padding:4px 10px;font-size:12px;margin-left:4px;color:var(--danger);border-color:var(--danger);" onclick="deleteMyTenantUser('${uname}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -7776,7 +8117,7 @@ function openEditMyTenantUser(username){
   document.getElementById('mtu-modal-title').textContent='Edit User — '+username;
   const uEl=document.getElementById('mtu-username'); uEl.value=username; uEl.disabled=true;
   document.getElementById('mtu-display-name').value=u['Display Name']||'';
-  document.getElementById('mtu-role').value=u['Role']||'Admin';
+  document.getElementById('mtu-role').value=(u['Role']==='Staff')?'Biller':(u['Role']||'Admin');
   document.getElementById('mtu-status').value=u['Status']||'Active';
   document.getElementById('mtu-password').value='';
   document.getElementById('mtu-password-label').textContent='New Password (optional)';
