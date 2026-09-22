@@ -4744,8 +4744,15 @@ var LedgerPrint = (function () {
       return 'Goods described above are despatched for delivery. Please verify quantity and ' +
         'condition on receipt and sign below.' + j;
     if (inv.kind === 'quotation')
-      return 'Prices are exclusive of taxes shown separately and are valid for the period ' +
-        'stated. Delivery and payment terms to be confirmed on order.' + j;
+      // The "Notes / Terms (printed on quotation)" field was being saved
+      // but never rendered anywhere — this always printed the generic
+      // sentence below regardless of what the tenant typed. Bug: use the
+      // tenant's own text when they entered any, fall back to the generic
+      // sentence only when they didn't. Must stay in sync with the backend
+      // ledgerPrint.js copy of this function.
+      return (inv.meta.notes ||
+        'Prices are exclusive of taxes shown separately and are valid for the period ' +
+        'stated. Delivery and payment terms to be confirmed on order.') + j;
     if (inv.kind === 'creditnote' || inv.kind === 'debitnote')
       return 'Issued against the invoice referenced above.' +
         (inv.meta.reason ? ' Reason: ' + inv.meta.reason + '.' : '') + j;
