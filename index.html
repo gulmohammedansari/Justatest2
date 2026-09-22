@@ -197,6 +197,25 @@
     padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
   }
 
+  /* FORMAT PICKER (thumbnail cards for Print Format selects) */
+  .fmt-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fmt-opt { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+  .fmt-opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .fmt-mock {
+    display: block; width: 34px; height: 46px; background: #fff; border-radius: 3px;
+    border: 1.5px solid var(--border); position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .fmt-opt input:checked ~ .fmt-mock { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,0.25); }
+  .fmt-mock.fmt-default i { display: block; position: absolute; left: 4px; right: 4px; height: 2px; background: #999; }
+  .fmt-mock.fmt-default i:nth-child(1) { top: 5px; width: 60%; background: #333; height: 3px; }
+  .fmt-mock.fmt-default i:nth-child(2) { top: 13px; }
+  .fmt-mock.fmt-default i:nth-child(3) { top: 18px; }
+  .fmt-mock.fmt-default i:nth-child(4) { top: 23px; }
+  .fmt-mock.fmt-modern i { position: absolute; left: 0; top: 0; width: 12px; height: 100%; background: #4338CA; }
+  .fmt-mock.fmt-horizon i { position: absolute; right: -7px; top: 6px; width: 18px; height: 5px; background: #B91C1C; transform: rotate(45deg); }
+  .fmt-name { font-size: 10px; color: var(--text3); }
+  .fmt-opt input:checked ~ .fmt-name { color: var(--accent); font-weight: 600; }
+
   /* ITEMS TABLE inside invoice page */
   .items-table { width: 100%; border-collapse: collapse; }
   .items-table th { font-size: 11px; font-weight: 600; color: var(--text3); padding: 10px 8px; background: rgba(255,255,255,0.025); border-bottom: 1px solid var(--border); text-align: left; }
@@ -1074,10 +1093,10 @@
             </div>
             <div class="form-group">
               <label>Print Format</label>
-              <select id="ch-print-format" onchange="challanState.printFormat=this.value;">
-                <option value="default">Default</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="ch-print-format" value="default" checked onchange="challanState.printFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="ch-print-format" value="modern" onchange="challanState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
             </div>
           </div>
         </div>
@@ -1209,11 +1228,11 @@
             </div>
             <div class="form-group">
               <label>Print Format <span style="color:var(--danger);">*</span></label>
-              <select id="cert-format" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();">
-                <option value="default">Default</option>
-                <option value="horizon">Horizon Style</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="cert-format" value="default" checked onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="cert-format" value="horizon" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();"><span class="fmt-mock fmt-horizon"><i></i></span><span class="fmt-name">Horizon</span></label>
+                <label class="fmt-opt"><input type="radio" name="cert-format" value="modern" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
             </div>
             <div class="form-group">
               <label>Issue Date <span style="color:var(--danger);">*</span></label>
@@ -1363,10 +1382,10 @@
             </div>
             <div class="form-group">
               <label>Print Format</label>
-              <select id="qt-print-format" onchange="quotState.printFormat=this.value;">
-                <option value="default">Default</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="qt-print-format" value="default" checked onchange="quotState.printFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="qt-print-format" value="modern" onchange="quotState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
             </div>
           </div>
         </div>
@@ -1525,10 +1544,10 @@
             </div>
             <div class="form-group">
               <label>Print Format</label>
-              <select id="cn-print-format" onchange="cnState.printFormat=this.value;">
-                <option value="default">Default</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="cn-print-format" value="default" checked onchange="cnState.printFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="cn-print-format" value="modern" onchange="cnState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
             </div>
           </div>
         </div>
@@ -1711,10 +1730,10 @@
             </div>
             <div class="form-group">
               <label>Print Format</label>
-              <select id="inv-print-format" onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;">
-                <option value="default">Default</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="inv-print-format" value="default" checked onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="inv-print-format" value="modern" onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
             </div>
           </div>
         </div>
@@ -2162,10 +2181,10 @@
             </div>
             <div class="form-group full">
               <label>Default Print Format</label>
-              <select id="settings-default-format" onchange="COMPANY.defaultPrintFormat=this.value;">
-                <option value="default">Default</option>
-                <option value="modern">Modern</option>
-              </select>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="settings-default-format" value="default" checked onchange="COMPANY.defaultPrintFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
+                <label class="fmt-opt"><input type="radio" name="settings-default-format" value="modern" onchange="COMPANY.defaultPrintFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
               <div style="font-size:11px;color:var(--text3);margin-top:4px;">Applied to new Invoices/Quotations/Challans/Credit-Debit Notes — change it per-document any time on the form itself. Certificate has its own format choice.</div>
             </div>
             <div class="form-group">
@@ -2581,7 +2600,7 @@ function applyCompanyToUI(){
   const state=document.getElementById('settings-state'); if(state) state.value=COMPANY.state?(COMPANY.state+(COMPANY.stateCode?' (Code: '+COMPANY.stateCode+')':'')):'';
   const calId=document.getElementById('settings-calendar-id'); if(calId) calId.value=COMPANY.calendarId||'';
   const tagline=document.getElementById('settings-tagline'); if(tagline) tagline.value=COMPANY.tagline||'';
-  const defFmt=document.getElementById('settings-default-format'); if(defFmt) defFmt.value=COMPANY.defaultPrintFormat||'default';
+  syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
   ['logo','signature','stamp'].forEach(field=>{
     const val=COMPANY[field]||'';
     const valInput=document.getElementById('settings-'+field+'-value'); if(valInput) valInput.value=val;
@@ -2760,7 +2779,7 @@ function saveBrandingSettings(){
       document.getElementById('settings-signature-value').value=COMPANY.signature;
       document.getElementById('settings-stamp-value').value=COMPANY.stamp;
       document.getElementById('settings-tagline').value=COMPANY.tagline;
-      const defFmtSel=document.getElementById('settings-default-format');if(defFmtSel)defFmtSel.value=COMPANY.defaultPrintFormat;
+      syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
       sessionStorage.setItem('gme_company',JSON.stringify(COMPANY));
       showToast('Branding saved.','success');
     } else {
@@ -2976,7 +2995,7 @@ function openNewInvoicePage(){
 
   // Reset state
   invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:COMPANY.defaultPrintFormat||'default'};
-  const invFmtSel=document.getElementById('inv-print-format');if(invFmtSel)invFmtSel.value=invState.invoiceMeta.printFormat;
+  syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
   invState.buyer={name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''};
   invState.taxes={cgst:9,sgst:9,igst:0};
   invState.lineItems=[];invState.isSaved=false;
@@ -3011,6 +3030,11 @@ function closeNewInvoicePage(){
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
+function syncFmtPicker(name,value){
+  const r=document.querySelector('input[name="'+name+'"][value="'+(value||'default')+'"]');
+  if(r) r.checked=true;
+}
+
 function showToast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast'+(type?' '+type:''); t.classList.add('show');
@@ -3988,7 +4012,7 @@ async function editInvoice(invoiceNo){
     document.getElementById('inv-no').value=invState.invoiceMeta.invoiceNo;
     document.getElementById('inv-date').value=invState.invoiceMeta.date;
     document.getElementById('inv-challan').value=invState.invoiceMeta.challanNo;
-    const invFmtSel2=document.getElementById('inv-print-format');if(invFmtSel2)invFmtSel2.value=invState.invoiceMeta.printFormat;
+    syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
     document.getElementById('inv-gst-type').value=(!cgstRate&&!sgstRate&&!igstRate)?'NO_GST':(igstRate>0?'IGST':'CGST_SGST');
     document.getElementById('buyer-name').value=invState.buyer.name;
     document.getElementById('buyer-address').value=invState.buyer.address;
@@ -4977,7 +5001,7 @@ function openNewChallanPage(){
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     items:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalChallanNo:''
   };
-  const chFmtSel=document.getElementById('ch-print-format');if(chFmtSel)chFmtSel.value=challanState.printFormat;
+  syncFmtPicker('ch-print-format',challanState.printFormat);
   const ctitle=document.getElementById('challan-page-title');if(ctitle)ctitle.textContent='New Delivery Challan';
   const clbl=document.getElementById('challan-save-btn-label');if(clbl)clbl.textContent='Save Challan';
   const ss=document.getElementById('challan-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
@@ -5440,7 +5464,7 @@ async function editChallan(challanNo){
     document.getElementById('ch-date').value=challanState.date;
     document.getElementById('ch-ref-inv').value=challanState.refInvoiceNo;
     document.getElementById('ch-transport').value=challanState.transport;
-    const chFmtSel2=document.getElementById('ch-print-format');if(chFmtSel2)chFmtSel2.value=challanState.printFormat;
+    syncFmtPicker('ch-print-format',challanState.printFormat);
     document.getElementById('ch-buyer-name').value=challanState.buyer.name;
     document.getElementById('ch-buyer-address').value=challanState.buyer.address;
     document.getElementById('ch-buyer-gstin').value=challanState.buyer.gstin;
@@ -5539,7 +5563,7 @@ function openNewQuotationPage(){
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
   };
-  const qtFmtSel=document.getElementById('qt-print-format');if(qtFmtSel)qtFmtSel.value=quotState.printFormat;
+  syncFmtPicker('qt-print-format',quotState.printFormat);
   const ss=document.getElementById('quot-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const qtitle=document.getElementById('quotation-page-title');if(qtitle)qtitle.textContent='New Quotation';
   const qlbl=document.getElementById('quot-save-btn-label');if(qlbl)qlbl.textContent='Save Quotation';
@@ -5894,7 +5918,7 @@ async function editQuotation(quotNo){
     document.getElementById('qt-date').value=quotState.date;
     document.getElementById('qt-valid-until').value=quotState.validUntil;
     document.getElementById('qt-ref-no').value=quotState.refNo;
-    const qtFmtSel2=document.getElementById('qt-print-format');if(qtFmtSel2)qtFmtSel2.value=quotState.printFormat;
+    syncFmtPicker('qt-print-format',quotState.printFormat);
     document.getElementById('qt-buyer-name').value=quotState.buyer.name;
     document.getElementById('qt-buyer-address').value=quotState.buyer.address;
     document.getElementById('qt-buyer-gstin').value=quotState.buyer.gstin;
@@ -6203,7 +6227,7 @@ function openNewCreditNotePage(){
     taxes:{cgst:9,sgst:9,igst:0},
     lineItems:[], isSaved:false, buyerSearchTimeout:null
   };
-  const cnFmtSel=document.getElementById('cn-print-format');if(cnFmtSel)cnFmtSel.value=cnState.printFormat;
+  syncFmtPicker('cn-print-format',cnState.printFormat);
   const ss=document.getElementById('cn-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
 
   document.getElementById('cn-note-type').value='CREDIT';
@@ -7182,7 +7206,7 @@ function openNewCertificatePage(){
     items:[],
     isSaved:false, buyerSearchTimeout:null, editMode:false, originalCertNo:''
   };
-  const fmtSel=document.getElementById('cert-format');if(fmtSel)fmtSel.value='default';
+  syncFmtPicker('cert-format','default');
   toggleCertFormatColumns();
   const ss=document.getElementById('cert-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const tl=document.getElementById('cert-page-title');if(tl)tl.textContent='New Certificate';
@@ -7496,7 +7520,7 @@ async function editCertificate(certNo){
 
     document.getElementById('cert-no').value=certState.certNo;
     document.getElementById('cert-type').value=certState.certType;
-    document.getElementById('cert-format').value=certState.certFormat;
+    syncFmtPicker('cert-format',certState.certFormat);
     document.getElementById('cert-issue-date').value=certState.issueDate;
     document.getElementById('cert-valid-until').value=certState.validUntil;
     document.getElementById('cert-ref-no').value=certState.refNo;
