@@ -224,6 +224,60 @@
   body:not(.role-admin) .role-admin-only { display: none !important; }
   body.role-viewer .btn-primary, body.role-viewer .btn-success { display: none !important; }
   .r { text-align: right; }
+  .role-badge {
+    display: inline-block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; padding: 1px 7px; border-radius: 20px;
+    background: rgba(108,99,255,0.16); color: var(--accent);
+  }
+
+  /* SIDEBAR STYLE PICKER thumbnails (reuses .fmt-opt/.fmt-mock/.fmt-name from the
+     Print Format picker — same selectable-card mechanism, different mock content) */
+  .nav-mock { background: #12142b; }
+  .nav-mock i { position: absolute; left: 4px; right: 4px; height: 5px; border-radius: 2px; background: #3a3f6b; }
+  .nav-mock i:nth-child(1) { top: 6px; }
+  .nav-mock i:nth-child(2) { top: 16px; background: var(--accent); }
+  .nav-mock i:nth-child(3) { top: 26px; }
+  .nav-mock.compact i { left: 12px; right: 12px; }
+  .nav-mock.modern i { border-radius: 6px; }
+  .nav-mock.modern i:nth-child(2) { box-shadow: 0 0 5px var(--accent); }
+
+  /* SIDEBAR STYLE VARIANTS — desktop only; mobile always uses the classic
+     off-canvas drawer regardless of the tenant's chosen style (an icon-only
+     rail or heavier chip styling isn't worth the cramped tap targets there). */
+  @media (min-width: 769px) {
+    body.nav-style-compact .sidebar { width: 68px; }
+    body.nav-style-compact .main { margin-left: 68px; }
+    body.nav-style-compact .sidebar-logo { padding: 16px 0; }
+    body.nav-style-compact .logo-mark { justify-content: center; }
+    body.nav-style-compact .logo-mark > div:last-child, body.nav-style-compact .nav-label,
+    body.nav-style-compact .user-info { display: none; }
+    body.nav-style-compact .nav-item { justify-content: center; padding: 10px 0; font-size: 0; gap: 0; }
+    body.nav-style-compact .nav-item svg { width: 18px; height: 18px; }
+    body.nav-style-compact .nav-item:hover { transform: none; }
+    body.nav-style-compact .user-pill { justify-content: center; }
+    body.nav-style-compact .sidebar-footer { padding: 14px 0; }
+
+    body.nav-style-modern .sidebar { background: linear-gradient(180deg, rgba(108,99,255,0.10), rgba(255,255,255,0.02)); }
+    body.nav-style-modern .nav-item { border-radius: 12px; }
+    body.nav-style-modern .nav-item svg {
+      padding: 5px; box-sizing: content-box; border-radius: 8px; background: rgba(255,255,255,0.06);
+      transition: background 0.18s var(--ease);
+    }
+    body.nav-style-modern .nav-item:hover svg { background: rgba(255,255,255,0.16); }
+    body.nav-style-modern .nav-item.active {
+      background: var(--accent); box-shadow: 0 6px 18px rgba(108,99,255,0.4);
+    }
+    body.nav-style-modern .nav-item.active svg { background: rgba(255,255,255,0.2); }
+    body.nav-style-modern .nav-label { position: relative; padding-left: 14px; }
+    body.nav-style-modern .nav-label::before {
+      content: ''; position: absolute; left: 2px; top: 1px; bottom: 1px; width: 3px;
+      border-radius: 2px; background: var(--accent);
+    }
+    body.nav-style-modern .sidebar-footer {
+      background: linear-gradient(135deg, rgba(108,99,255,0.14), rgba(255,255,255,0.02));
+      margin: 0 10px 10px; border-radius: 12px; border: 1px solid var(--border); padding: 12px;
+    }
+  }
 
   /* ITEMS TABLE inside invoice page */
   .items-table { width: 100%; border-collapse: collapse; }
@@ -989,7 +1043,7 @@
   <div class="sidebar-footer">
     <div class="user-pill">
       <div class="avatar" id="sidebar-avatar">GM</div>
-      <div class="user-info"><div class="name" id="sidebar-username">Admin</div><div class="role" id="sidebar-company">—</div></div>
+      <div class="user-info"><div class="name" id="sidebar-username">Admin</div><div class="role" id="sidebar-company">—</div><div class="role-badge" id="sidebar-role-badge"></div></div>
     </div>
   </div>
 </aside>
@@ -2261,6 +2315,15 @@
               </div>
               <div style="font-size:11px;color:var(--text3);margin-top:4px;">Applied to new Invoices/Quotations/Challans/Credit-Debit Notes — change it per-document any time on the form itself. Certificate has its own format choice.</div>
             </div>
+            <div class="form-group full">
+              <label>Sidebar Style</label>
+              <div class="fmt-picker">
+                <label class="fmt-opt"><input type="radio" name="settings-nav-style" value="classic" checked onchange="COMPANY.navStyle=this.value;applyNavStyle(this.value);"><span class="fmt-mock nav-mock classic"><i></i><i></i><i></i></span><span class="fmt-name">Classic</span></label>
+                <label class="fmt-opt"><input type="radio" name="settings-nav-style" value="compact" onchange="COMPANY.navStyle=this.value;applyNavStyle(this.value);"><span class="fmt-mock nav-mock compact"><i></i><i></i><i></i></span><span class="fmt-name">Compact</span></label>
+                <label class="fmt-opt"><input type="radio" name="settings-nav-style" value="modern" onchange="COMPANY.navStyle=this.value;applyNavStyle(this.value);"><span class="fmt-mock nav-mock modern"><i></i><i></i><i></i></span><span class="fmt-name">Modern</span></label>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Preview updates instantly — click "Save Branding" below to keep it.</div>
+            </div>
             <div class="form-group">
               <label>Company Logo</label>
               <input type="file" id="settings-logo-file" accept="image/*" onchange="onBrandingImageSelected(this,'logo',false)"/>
@@ -2573,7 +2636,7 @@ let COMPANY = {
   name:'', address:'', gstin:'', state:'', stateCode:'',
   phone:'', email:'', website:'', bank:'',
   acctName:'', acctNo:'', ifsc:'', upi:'', pan:'', logo:'', signature:'', calendarId:'', stamp:'', watermark:'',
-  watermarkSrc:'', watermarkStyle:'tilted', tagline:'', defaultPrintFormat:'default'
+  watermarkSrc:'', watermarkStyle:'tilted', tagline:'', defaultPrintFormat:'default', navStyle:'classic'
 };
 
 function escapeHtml(text){return String(text==null?'':text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2676,6 +2739,8 @@ function applyCompanyToUI(){
   const calId=document.getElementById('settings-calendar-id'); if(calId) calId.value=COMPANY.calendarId||'';
   const tagline=document.getElementById('settings-tagline'); if(tagline) tagline.value=COMPANY.tagline||'';
   syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
+  syncFmtPicker('settings-nav-style',COMPANY.navStyle);
+  applyNavStyle(COMPANY.navStyle);
   ['logo','signature','stamp'].forEach(field=>{
     const val=COMPANY[field]||'';
     const valInput=document.getElementById('settings-'+field+'-value'); if(valInput) valInput.value=val;
@@ -2709,7 +2774,8 @@ function saveCalendarSettings(){
     pan:COMPANY.pan||'', logo:COMPANY.logo||'', signature:COMPANY.signature||'',
     stamp:COMPANY.stamp||'', watermark:COMPANY.watermark||'', calendarId,
     watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
-    tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default'
+    tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
+    navStyle:COMPANY.navStyle||'classic'
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2839,7 +2905,8 @@ function saveBrandingSettings(){
   gasPostAMC('saveCompanySettings',{data:{
     pan:COMPANY.pan||'', logo, signature, stamp, watermark:COMPANY.watermark||'',
     watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
-    calendarId:COMPANY.calendarId||'', tagline, defaultPrintFormat:COMPANY.defaultPrintFormat||'default'
+    calendarId:COMPANY.calendarId||'', tagline, defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
+    navStyle:COMPANY.navStyle||'classic'
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2850,11 +2917,14 @@ function saveBrandingSettings(){
       const saved=d.company||{};
       COMPANY.logo=saved.logo||''; COMPANY.signature=saved.signature||''; COMPANY.stamp=saved.stamp||'';
       COMPANY.tagline=saved.tagline||''; COMPANY.defaultPrintFormat=saved.defaultPrintFormat||'default';
+      COMPANY.navStyle=saved.navStyle||'classic';
       document.getElementById('settings-logo-value').value=COMPANY.logo;
       document.getElementById('settings-signature-value').value=COMPANY.signature;
       document.getElementById('settings-stamp-value').value=COMPANY.stamp;
       document.getElementById('settings-tagline').value=COMPANY.tagline;
       syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
+      syncFmtPicker('settings-nav-style',COMPANY.navStyle);
+      applyNavStyle(COMPANY.navStyle);
       sessionStorage.setItem('gme_company',JSON.stringify(COMPANY));
       showToast('Branding saved.','success');
     } else {
@@ -2926,7 +2996,8 @@ function saveWatermarkSettings(){
   gasPostAMC('saveCompanySettings',{data:{
     pan:COMPANY.pan||'', logo:COMPANY.logo||'', signature:COMPANY.signature||'',
     stamp:COMPANY.stamp||'', calendarId:COMPANY.calendarId||'',
-    watermarkSrc, watermarkStyle, watermark, tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default'
+    watermarkSrc, watermarkStyle, watermark, tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
+    navStyle:COMPANY.navStyle||'classic'
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2989,6 +3060,19 @@ function applyRoleUI(){
   adminOnlyNav.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(role==='Admin')?'':'none';});
   const reportsNav=document.getElementById('nav-reports');
   if(reportsNav) reportsNav.style.display=(role==='Biller')?'none':'';
+  const badge=document.getElementById('sidebar-role-badge'); if(badge) badge.textContent=role;
+}
+
+// Sidebar Style — a pure CSS reskin toggled by a body class, same pattern as
+// the Print Format pickers. Nav items/onclick handlers never change; only
+// their look does. Tooltips for the icon-only Compact style come from each
+// button's own visible text (still in the DOM, just font-size:0'd), read
+// once here rather than hand-adding title="" to ~15 buttons.
+function applyNavStyle(style){
+  style=['classic','compact','modern'].includes(style)?style:'classic';
+  document.body.classList.remove('nav-style-classic','nav-style-compact','nav-style-modern');
+  document.body.classList.add('nav-style-'+style);
+  document.querySelectorAll('.nav-item').forEach(b=>{ if(!b.title) b.title=b.textContent.trim(); });
 }
 
 function doLogout(){
