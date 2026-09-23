@@ -1297,6 +1297,12 @@
                 <label class="fmt-opt"><input type="radio" name="cert-format" value="modern" onchange="certState.certFormat=this.value;certState.isSaved=false;toggleCertFormatColumns();"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
               </div>
             </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="cert-show-sign-stamp" checked onchange="certState.showSignStamp=this.checked;certState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show Signature &amp; Stamp on this certificate
+              </label>
+            </div>
             <div class="form-group">
               <label>Issue Date <span style="color:var(--danger);">*</span></label>
               <input type="date" id="cert-issue-date" onchange="certState.issueDate=this.value;certState.isSaved=false;"/>
@@ -1449,6 +1455,12 @@
                 <label class="fmt-opt"><input type="radio" name="qt-print-format" value="default" checked onchange="quotState.printFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
                 <label class="fmt-opt"><input type="radio" name="qt-print-format" value="modern" onchange="quotState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
               </div>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="qt-show-sign-stamp" checked onchange="quotState.showSignStamp=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show Signature &amp; Stamp on this quotation
+              </label>
             </div>
           </div>
         </div>
@@ -1611,6 +1623,12 @@
                 <label class="fmt-opt"><input type="radio" name="cn-print-format" value="default" checked onchange="cnState.printFormat=this.value;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
                 <label class="fmt-opt"><input type="radio" name="cn-print-format" value="modern" onchange="cnState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
               </div>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="cn-show-sign-stamp" checked onchange="cnState.showSignStamp=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show Signature &amp; Stamp on this note
+              </label>
             </div>
           </div>
         </div>
@@ -1797,6 +1815,12 @@
                 <label class="fmt-opt"><input type="radio" name="inv-print-format" value="default" checked onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;"><span class="fmt-mock fmt-default"><i></i><i></i><i></i><i></i></span><span class="fmt-name">Default</span></label>
                 <label class="fmt-opt"><input type="radio" name="inv-print-format" value="modern" onchange="invState.invoiceMeta.printFormat=this.value;invState.isSaved=false;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
               </div>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="inv-show-sign-stamp" checked onchange="invState.invoiceMeta.showSignStamp=this.checked;invState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show Signature &amp; Stamp on this invoice
+              </label>
             </div>
           </div>
         </div>
@@ -2342,6 +2366,13 @@
               <input type="hidden" id="settings-stamp-value"/>
               <div id="settings-stamp-preview" style="margin-top:8px;"></div>
             </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="settings-show-sign-stamp" checked onchange="COMPANY.showSignStamp=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show Signature &amp; Stamp on printed/emailed documents
+              </label>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Turn off to keep the images uploaded but leave the "Authorised signatory" area blank on every Invoice, Challan, Quotation, Credit/Debit Note and Certificate — including WhatsApp/Email PDFs.</div>
+            </div>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:8px;">
             Signature and Stamp photos have their background automatically removed (based on the color sampled from the photo's corners) so they overlay cleanly on printed invoices and certificates instead of showing as a solid box. For best results, photograph them against one plain, even-colored background.
@@ -2636,7 +2667,8 @@ let COMPANY = {
   name:'', address:'', gstin:'', state:'', stateCode:'',
   phone:'', email:'', website:'', bank:'',
   acctName:'', acctNo:'', ifsc:'', upi:'', pan:'', logo:'', signature:'', calendarId:'', stamp:'', watermark:'',
-  watermarkSrc:'', watermarkStyle:'tilted', tagline:'', defaultPrintFormat:'default', navStyle:'classic'
+  watermarkSrc:'', watermarkStyle:'tilted', tagline:'', defaultPrintFormat:'default', navStyle:'classic',
+  showSignStamp:true
 };
 
 function escapeHtml(text){return String(text==null?'':text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2657,7 +2689,7 @@ function escapeForInlineHandler(v){
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let invState = {
-  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'', printFormat:'default' },
+  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'', printFormat:'default', showSignStamp:true },
   buyer:{ name:'', address:'', gstin:'', state:'Maharashtra', stateCode:'27', phone:'', email:'' },
   taxes:{ cgst:9, sgst:9, igst:0 },
   lineItems:[], isSaved:false, savedBuyers:[], buyerSearchTimeout:null,
@@ -2741,6 +2773,7 @@ function applyCompanyToUI(){
   syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
   syncFmtPicker('settings-nav-style',COMPANY.navStyle);
   applyNavStyle(COMPANY.navStyle);
+  const showSignStampEl=document.getElementById('settings-show-sign-stamp'); if(showSignStampEl) showSignStampEl.checked=COMPANY.showSignStamp!==false;
   ['logo','signature','stamp'].forEach(field=>{
     const val=COMPANY[field]||'';
     const valInput=document.getElementById('settings-'+field+'-value'); if(valInput) valInput.value=val;
@@ -2775,7 +2808,7 @@ function saveCalendarSettings(){
     stamp:COMPANY.stamp||'', watermark:COMPANY.watermark||'', calendarId,
     watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
     tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
-    navStyle:COMPANY.navStyle||'classic'
+    navStyle:COMPANY.navStyle||'classic', showSignStamp:COMPANY.showSignStamp!==false
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2898,6 +2931,7 @@ function saveBrandingSettings(){
   const signature=document.getElementById('settings-signature-value').value||'';
   const stamp=document.getElementById('settings-stamp-value').value||'';
   const tagline=(document.getElementById('settings-tagline').value||'').trim();
+  const showSignStamp=document.getElementById('settings-show-sign-stamp').checked;
   const btn=document.getElementById('settings-branding-save-btn');
   btn.disabled=true; btn.textContent='Saving…';
   // Watermark has its own Save button/card now — pass the existing value
@@ -2906,7 +2940,7 @@ function saveBrandingSettings(){
     pan:COMPANY.pan||'', logo, signature, stamp, watermark:COMPANY.watermark||'',
     watermarkSrc:COMPANY.watermarkSrc||'', watermarkStyle:COMPANY.watermarkStyle||'tilted',
     calendarId:COMPANY.calendarId||'', tagline, defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
-    navStyle:COMPANY.navStyle||'classic'
+    navStyle:COMPANY.navStyle||'classic', showSignStamp
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -2917,7 +2951,7 @@ function saveBrandingSettings(){
       const saved=d.company||{};
       COMPANY.logo=saved.logo||''; COMPANY.signature=saved.signature||''; COMPANY.stamp=saved.stamp||'';
       COMPANY.tagline=saved.tagline||''; COMPANY.defaultPrintFormat=saved.defaultPrintFormat||'default';
-      COMPANY.navStyle=saved.navStyle||'classic';
+      COMPANY.navStyle=saved.navStyle||'classic'; COMPANY.showSignStamp=saved.showSignStamp!==false;
       document.getElementById('settings-logo-value').value=COMPANY.logo;
       document.getElementById('settings-signature-value').value=COMPANY.signature;
       document.getElementById('settings-stamp-value').value=COMPANY.stamp;
@@ -2925,6 +2959,7 @@ function saveBrandingSettings(){
       syncFmtPicker('settings-default-format',COMPANY.defaultPrintFormat);
       syncFmtPicker('settings-nav-style',COMPANY.navStyle);
       applyNavStyle(COMPANY.navStyle);
+      const ssEl=document.getElementById('settings-show-sign-stamp'); if(ssEl) ssEl.checked=COMPANY.showSignStamp!==false;
       sessionStorage.setItem('gme_company',JSON.stringify(COMPANY));
       showToast('Branding saved.','success');
     } else {
@@ -2997,7 +3032,7 @@ function saveWatermarkSettings(){
     pan:COMPANY.pan||'', logo:COMPANY.logo||'', signature:COMPANY.signature||'',
     stamp:COMPANY.stamp||'', calendarId:COMPANY.calendarId||'',
     watermarkSrc, watermarkStyle, watermark, tagline:COMPANY.tagline||'', defaultPrintFormat:COMPANY.defaultPrintFormat||'default',
-    navStyle:COMPANY.navStyle||'classic'
+    navStyle:COMPANY.navStyle||'classic', showSignStamp:COMPANY.showSignStamp!==false
   }}).then(d=>{
     btn.disabled=false; btn.textContent='Save';
     if(d.success){
@@ -3175,8 +3210,9 @@ function openNewInvoicePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   // Reset state
-  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:COMPANY.defaultPrintFormat||'default'};
+  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:COMPANY.defaultPrintFormat||'default',showSignStamp:COMPANY.showSignStamp!==false};
   syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
+  const invSsEl=document.getElementById('inv-show-sign-stamp'); if(invSsEl) invSsEl.checked=invState.invoiceMeta.showSignStamp;
   invState.buyer={name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''};
   invState.taxes={cgst:9,sgst:9,igst:0};
   invState.lineItems=[];invState.isSaved=false;
@@ -4174,7 +4210,7 @@ async function handleSaveToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default'
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
     }
   };
   try{
@@ -4228,7 +4264,7 @@ async function handleUpdateInvoiceToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default'
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
     }
   };
   try{
@@ -4263,7 +4299,7 @@ function handlePrint(){
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
     items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
-    printFormat:invState.invoiceMeta.printFormat||'default'
+    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
   });
 }
 
@@ -4284,7 +4320,8 @@ async function reprintInvoice(invoiceNo){
       buyerPhone:inv['Buyer Phone']||'', buyerEmail:inv['Buyer Email']||'',
       subTotal:inv['Sub Total'], cgstRate:inv['CGST Rate'], sgstRate:inv['SGST Rate'], igstRate:inv['IGST Rate'],
       cgstAmount:inv['CGST Amount'], sgstAmount:inv['SGST Amount'], igstAmount:inv['IGST Amount'],
-      grandTotal:inv['Grand Total'], items, printFormat:inv['Print Format']||'default'
+      grandTotal:inv['Grand Total'], items, printFormat:inv['Print Format']||'default',
+      showSignStamp:inv['Show Sign Stamp']!=='No'
     });
   }catch(e){showToast('Failed to load invoice for print.','error');}
 }
@@ -4427,7 +4464,7 @@ async function editInvoice(invoiceNo){
     document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
     // Populate state from the saved invoice
-    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||'',printFormat:inv['Print Format']||'default'};
+    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||'',printFormat:inv['Print Format']||'default',showSignStamp:inv['Show Sign Stamp']!=='No'};
     invState.buyer={name:inv['Buyer Name']||'',address:inv['Buyer Address']||'',gstin:inv['Buyer GSTIN']||'',state:inv['Buyer State']||'Maharashtra',stateCode:inv['State Code']||'27',phone:inv['Buyer Phone']||'',email:inv['Buyer Email']||''};
     const cgstRate=parseFloat(inv['CGST Rate']||0), sgstRate=parseFloat(inv['SGST Rate']||0), igstRate=parseFloat(inv['IGST Rate']||0);
     invState.taxes={cgst:cgstRate||9, sgst:sgstRate||9, igst:igstRate||0};
@@ -4438,6 +4475,7 @@ async function editInvoice(invoiceNo){
     document.getElementById('inv-date').value=invState.invoiceMeta.date;
     document.getElementById('inv-challan').value=invState.invoiceMeta.challanNo;
     syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
+    const invSsEl2=document.getElementById('inv-show-sign-stamp'); if(invSsEl2) invSsEl2.checked=invState.invoiceMeta.showSignStamp;
     document.getElementById('inv-gst-type').value=(!cgstRate&&!sgstRate&&!igstRate)?'NO_GST':(igstRate>0?'IGST':'CGST_SGST');
     document.getElementById('buyer-name').value=invState.buyer.name;
     document.getElementById('buyer-address').value=invState.buyer.address;
@@ -4682,6 +4720,10 @@ var LedgerPrint = (function () {
   /* ---- model: map the caller's data onto what the renderer needs -------- */
   /* `kind` selects the profile. Field names differ between documents, so the
      document number and date are read from whichever key the caller used. */
+  function showSignStampFor(data, company) {
+    return typeof data.showSignStamp === 'boolean' ? data.showSignStamp : company.showSignStamp !== false;
+  }
+
   function buildDoc(kind, data, company) {
     DOC = DOCS[kind] || DOCS.invoice;
     company = company || {};
@@ -4755,7 +4797,8 @@ var LedgerPrint = (function () {
         stateCode: company.stateCode || '', phone: company.phone || '',
         email: company.email || '', website: company.website || '',
         pan: company.pan || '', logo: company.logo || '',
-        signature: company.signature || '', stamp: company.stamp || '',
+        signature: showSignStampFor(data, company) ? (company.signature || '') : '',
+        stamp: showSignStampFor(data, company) ? (company.stamp || '') : '',
         watermark: company.watermark || ''
       },
       bank: {
@@ -5945,7 +5988,7 @@ function handlePreviewInvoice(){
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
     items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
-    printFormat:invState.invoiceMeta.printFormat||'default'
+    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
   });
 }
 
@@ -5970,7 +6013,7 @@ function handlePreviewChallan(){
 // ── QUOTATION STATE & HELPERS ─────────────────────────────────────────────────
 let quotState = {
   quotNo:'', date:new Date().toISOString().split('T')[0],
-  validUntil:'', refNo:'', notes:'', printFormat:'default',
+  validUntil:'', refNo:'', notes:'', printFormat:'default', showSignStamp:true,
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
   lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
 };
@@ -5985,10 +6028,12 @@ function openNewQuotationPage(){
   quotState={
     quotNo:'', date:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', notes:'', printFormat:COMPANY.defaultPrintFormat||'default',
+    showSignStamp:COMPANY.showSignStamp!==false,
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
   };
   syncFmtPicker('qt-print-format',quotState.printFormat);
+  const qtSsEl=document.getElementById('qt-show-sign-stamp'); if(qtSsEl) qtSsEl.checked=quotState.showSignStamp;
   const ss=document.getElementById('quot-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const qtitle=document.getElementById('quotation-page-title');if(qtitle)qtitle.textContent='New Quotation';
   const qlbl=document.getElementById('quot-save-btn-label');if(qlbl)qlbl.textContent='Save Quotation';
@@ -6222,7 +6267,7 @@ async function handleSaveQuotation(){
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:quotState.printFormat||'default'
+    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
   };
 
   try{
@@ -6289,7 +6334,7 @@ async function handleUpdateQuotationToSheets(){
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:quotState.printFormat||'default'
+    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
   };
 
   try{
@@ -6334,6 +6379,7 @@ async function editQuotation(quotNo){
       quotNo:qt['Quotation No']||'', date:toDateInputValue(qt['Date']),
       validUntil:qt['Valid Until']?toDateInputValue(qt['Valid Until']):'',
       refNo:qt['Ref No']||'', notes:qt['Notes']||'', printFormat:qt['Print Format']||'default',
+      showSignStamp:qt['Show Sign Stamp']!=='No',
       buyer:{name:qt['Buyer Name']||'',address:qt['Buyer Address']||'',gstin:qt['Buyer GSTIN']||'',state:qt['Buyer State']||'Maharashtra',phone:qt['Buyer Phone']||'',email:qt['Buyer Email']||''},
       lineItems:[], isSaved:true, buyerSearchTimeout:null,
       editMode:true, originalQuotNo:qt['Quotation No']||''
@@ -6344,6 +6390,7 @@ async function editQuotation(quotNo){
     document.getElementById('qt-valid-until').value=quotState.validUntil;
     document.getElementById('qt-ref-no').value=quotState.refNo;
     syncFmtPicker('qt-print-format',quotState.printFormat);
+    const qtSsEl2=document.getElementById('qt-show-sign-stamp'); if(qtSsEl2) qtSsEl2.checked=quotState.showSignStamp;
     document.getElementById('qt-buyer-name').value=quotState.buyer.name;
     document.getElementById('qt-buyer-address').value=quotState.buyer.address;
     document.getElementById('qt-buyer-gstin').value=quotState.buyer.gstin;
@@ -6399,7 +6446,7 @@ function handlePreviewQuotation(){
     buyerState:quotState.buyer.state,
     buyerPhone:quotState.buyer.phone,
     buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default'
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6431,7 +6478,7 @@ function handlePrintQuotation(){
     quotNo:quotState.quotNo,date:quotState.date,validUntil:quotState.validUntil,refNo:quotState.refNo,notes:quotState.notes,
     buyerName:quotState.buyer.name,buyerAddress:quotState.buyer.address,buyerGstin:quotState.buyer.gstin,
     buyerState:quotState.buyer.state,buyerPhone:quotState.buyer.phone,buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default'
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6570,7 +6617,8 @@ async function reprintQuotation(quotNo){
       buyerGstin:qt['Buyer GSTIN']||'', buyerState:qt['Buyer State']||'',
       buyerPhone:qt['Buyer Phone']||'', buyerEmail:qt['Buyer Email']||'',
       subTotal:parseFloat(qt['Sub Total']||0), taxTotal:parseFloat(qt['Tax Total']||0),
-      grandTotal:parseFloat(qt['Grand Total']||0), items, printFormat:qt['Print Format']||'default'
+      grandTotal:parseFloat(qt['Grand Total']||0), items, printFormat:qt['Print Format']||'default',
+      showSignStamp:qt['Show Sign Stamp']!=='No'
     };
     const htmlContent=buildQuotationHtml(printData);
     const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6629,7 +6677,7 @@ async function onItemDescInput(id,val,type){
 
 let cnState = {
   noteType:'CREDIT', noteNo:'', date:new Date().toISOString().split('T')[0],
-  againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:'default',
+  againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:'default', showSignStamp:true,
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''},
   taxes:{cgst:9,sgst:9,igst:0},
   lineItems:[], isSaved:false, buyerSearchTimeout:null
@@ -6648,11 +6696,13 @@ function openNewCreditNotePage(){
   cnState={
     noteType:'CREDIT', noteNo:'', date:new Date().toISOString().split('T')[0],
     againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:COMPANY.defaultPrintFormat||'default',
+    showSignStamp:COMPANY.showSignStamp!==false,
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''},
     taxes:{cgst:9,sgst:9,igst:0},
     lineItems:[], isSaved:false, buyerSearchTimeout:null
   };
   syncFmtPicker('cn-print-format',cnState.printFormat);
+  const cnSsEl=document.getElementById('cn-show-sign-stamp'); if(cnSsEl) cnSsEl.checked=cnState.showSignStamp;
   const ss=document.getElementById('cn-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
 
   document.getElementById('cn-note-type').value='CREDIT';
@@ -6924,7 +6974,7 @@ async function handleSaveCreditNote(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:cnState.printFormat||'default'
+      items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
     }
   };
 
@@ -6964,7 +7014,7 @@ function handlePreviewCreditNote(){
     subTotal:totals.subTotal, cgstRate:totals.cgstRate, cgstAmount:totals.cgstAmt,
     sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
     igstRate:totals.igstRate, igstAmount:totals.igstAmt,
-    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default'
+    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
   });
 }
 
@@ -6986,7 +7036,7 @@ function handlePrintCreditNote(){
     subTotal:totals.subTotal, cgstRate:totals.cgstRate, cgstAmount:totals.cgstAmt,
     sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
     igstRate:totals.igstRate, igstAmount:totals.igstAmt,
-    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default'
+    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
   });
 }
 
@@ -7060,7 +7110,8 @@ async function reprintCreditNote(noteNo){
       cgstRate:parseFloat(n['CGST Rate']||0), cgstAmount:parseFloat(n['CGST Amount']||0),
       sgstRate:parseFloat(n['SGST Rate']||0), sgstAmount:parseFloat(n['SGST Amount']||0),
       igstRate:parseFloat(n['IGST Rate']||0), igstAmount:parseFloat(n['IGST Amount']||0),
-      grandTotal:parseFloat(n['Grand Total']||0), items, printFormat:n['Print Format']||'default'
+      grandTotal:parseFloat(n['Grand Total']||0), items, printFormat:n['Print Format']||'default',
+      showSignStamp:n['Show Sign Stamp']!=='No'
     });
   }catch(e){showToast('Could not load note.','error');}
 }
@@ -7608,7 +7659,7 @@ function loadDashboardAMC(){
 
 // ── CERTIFICATE STATE ────────────────────────────────────────────────────────
 let certState = {
-  certNo:'', certType:'Refilling', certFormat:'default',
+  certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:true,
   issueDate:new Date().toISOString().split('T')[0],
   validUntil:'', refNo:'', site:'', remarks:'',
   recipient:{name:'',address:'',phone:'',email:'',gstin:''},
@@ -7624,7 +7675,7 @@ function openNewCertificatePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   certState={
-    certNo:'', certType:'Refilling', certFormat:'default',
+    certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:COMPANY.showSignStamp!==false,
     issueDate:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', site:'', remarks:'',
     recipient:{name:'',address:'',phone:'',email:'',gstin:''},
@@ -7632,6 +7683,7 @@ function openNewCertificatePage(){
     isSaved:false, buyerSearchTimeout:null, editMode:false, originalCertNo:''
   };
   syncFmtPicker('cert-format','default');
+  const certSsEl=document.getElementById('cert-show-sign-stamp'); if(certSsEl) certSsEl.checked=certState.showSignStamp;
   toggleCertFormatColumns();
   const ss=document.getElementById('cert-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const tl=document.getElementById('cert-page-title');if(tl)tl.textContent='New Certificate';
@@ -7825,7 +7877,7 @@ async function handleSaveCertificate(){
     username:sessionStorage.getItem('gme_username')||'Unknown',
     certNo,
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default',
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7883,7 +7935,7 @@ async function handleUpdateCertificateToSheets(){
     originalCertNo:certState.originalCertNo,
     certNo,
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default',
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7934,6 +7986,7 @@ async function editCertificate(certNo){
 
     certState={
       certNo:c['Cert No']||'', certType:c['Cert Type']||'Refilling', certFormat:c['Certificate Format']||'default',
+      showSignStamp:c['Show Sign Stamp']!=='No',
       issueDate:toDateInputValue(c['Issue Date']),
       validUntil:c['Valid Until']?toDateInputValue(c['Valid Until']):'',
       refNo:c['Ref No']||'', site:c['Site']||'', remarks:c['Remarks']||'',
@@ -7946,6 +7999,7 @@ async function editCertificate(certNo){
     document.getElementById('cert-no').value=certState.certNo;
     document.getElementById('cert-type').value=certState.certType;
     syncFmtPicker('cert-format',certState.certFormat);
+    const certSsEl2=document.getElementById('cert-show-sign-stamp'); if(certSsEl2) certSsEl2.checked=certState.showSignStamp;
     document.getElementById('cert-issue-date').value=certState.issueDate;
     document.getElementById('cert-valid-until').value=certState.validUntil;
     document.getElementById('cert-ref-no').value=certState.refNo;
@@ -8263,7 +8317,7 @@ function handlePrintCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim(),
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default',
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -8282,7 +8336,7 @@ function handlePreviewCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim()||'PREVIEW',
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default',
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -8310,7 +8364,7 @@ async function reprintCertificate(certNo){
     try{items=JSON.parse(c['Items (JSON)']||'[]');}catch(e){items=[];}
     printCertificateHtml({
       certNo:c['Cert No'],certType:c['Cert Type']||'',
-      certFormat:c['Certificate Format']||'default',
+      certFormat:c['Certificate Format']||'default', showSignStamp:c['Show Sign Stamp']!=='No',
       issueDate:c['Issue Date'],validUntil:c['Valid Until']||'',
       refNo:c['Ref No']||'',site:c['Site']||'',
       items:items,remarks:c['Remarks']||'',
@@ -8355,6 +8409,9 @@ function printCertificateHtml(data){
 }
 
 function buildDefaultCertHtml(data){
+  const _showSignStamp = typeof data.showSignStamp==='boolean' ? data.showSignStamp : COMPANY.showSignStamp!==false;
+  const _stamp = _showSignStamp ? (COMPANY.stamp||'') : '';
+  const _signature = _showSignStamp ? (COMPANY.signature||'') : '';
   const fmtD=fmtDMY(data.issueDate);
   const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
 
@@ -8363,16 +8420,16 @@ function buildDefaultCertHtml(data){
   // Authorised Signatory block — only when BOTH are present; with just one
   // of the two, it falls back to showing that one on its own (signature
   // above the line, or the stamp stays in its separate seal circle below).
-  const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+  const sigStampHtml = (_stamp && _signature)
     // max-width widened from 16mm to 28mm — matches the backend
     // certificateHtml.js port exactly (must stay in sync); only width
     // changed, max-height stays at 16mm.
     ? `<div style="position:relative;width:40mm;height:16mm;margin:0 auto;">
-         <img src="${COMPANY.stamp}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:16mm;max-width:28mm;">
-         <img src="${COMPANY.signature}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:12mm;max-width:40mm;">
+         <img src="${_stamp}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:16mm;max-width:28mm;">
+         <img src="${_signature}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-height:12mm;max-width:40mm;">
        </div>`
-    : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
-  const showSeparateSeal = !(COMPANY.stamp && COMPANY.signature); // merged above once both exist — no need to show the stamp twice
+    : (_signature ? `<img src="${_signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
+  const showSeparateSeal = !(_stamp && _signature); // merged above once both exist — no need to show the stamp twice
 
   // Remarks column is optional — only shown at all if at least one item
   // actually has something in it; otherwise dropped entirely (not just left
@@ -8474,7 +8531,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
       <div class="cert-sign-label">Authorised Signatory</div>
       <div style="font-size:9px;color:#555;margin-top:1mm;">${escapeHtml(COMPANY.name)}</div>
     </div>
-    ${showSeparateSeal?`<div class="cert-seal" style="${COMPANY.stamp?'border:none;':''}">${COMPANY.stamp?`<img src="${COMPANY.stamp}" style="width:100%;height:100%;object-fit:contain;">`:'Company<br/>Seal'}</div>`:''}
+    ${showSeparateSeal?`<div class="cert-seal" style="${_stamp?'border:none;':''}">${_stamp?`<img src="${_stamp}" style="width:100%;height:100%;object-fit:contain;">`:'Company<br/>Seal'}</div>`:''}
     <div style="text-align:right;font-size:9px;color:#555;">
       <div>This is a computer-generated certificate.</div>
       <div style="margin-top:1mm;">Subject to Maharashtra Jurisdiction.</div>
@@ -8494,14 +8551,17 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 // watermark fields as buildDefaultCertHtml above; visually inspired by a
 // tenant-supplied sample PDF, not a pixel-perfect trace of it.
 function buildHorizonCertHtml(data){
+  const _showSignStamp = typeof data.showSignStamp==='boolean' ? data.showSignStamp : COMPANY.showSignStamp!==false;
+  const _stamp = _showSignStamp ? (COMPANY.stamp||'') : '';
+  const _signature = _showSignStamp ? (COMPANY.signature||'') : '';
   const fmtD=fmtDMY(data.issueDate);
 
-  const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+  const sigStampHtml = (_stamp && _signature)
     ? `<div style="margin:0 auto 1mm;">
-         <img src="${COMPANY.stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
-         <img src="${COMPANY.signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
+         <img src="${_stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
+         <img src="${_signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
        </div>`
-    : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
+    : (_signature ? `<img src="${_signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
 
   const certItems=(data.items&&data.items.length?data.items:[]);
   const itemsHtml = certItems.length
@@ -8607,16 +8667,19 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 // stay in sync with backend/src/lib/certificateHtml.js's
 // buildCertificateHtmlModern.
 function buildModernCertHtml(data){
+  const _showSignStamp = typeof data.showSignStamp==='boolean' ? data.showSignStamp : COMPANY.showSignStamp!==false;
+  const _stamp = _showSignStamp ? (COMPANY.stamp||'') : '';
+  const _signature = _showSignStamp ? (COMPANY.signature||'') : '';
   const ACCENT='#4338CA', ACCENT_TINT='#EEF2FF', LINE='#E5E7EB', TEXT='#1F2937', MUTED='#6B7280';
   const fmtD=fmtDMY(data.issueDate);
   const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
 
-  const sigStampHtml = (COMPANY.stamp && COMPANY.signature)
+  const sigStampHtml = (_stamp && _signature)
     ? `<div style="margin:0 auto 1mm;">
-         <img src="${COMPANY.stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
-         <img src="${COMPANY.signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
+         <img src="${_stamp}" style="max-height:16mm;max-width:28mm;vertical-align:middle;">
+         <img src="${_signature}" style="max-height:12mm;max-width:34mm;vertical-align:middle;margin-left:-12mm;">
        </div>`
-    : (COMPANY.signature ? `<img src="${COMPANY.signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
+    : (_signature ? `<img src="${_signature}" style="max-height:12mm;max-width:40mm;display:block;margin:0 auto;">` : '');
 
   const items=(data.items&&data.items.length?data.items:[]);
   const hasItemRemarks=items.some(it=>(it.remarks||'').toString().trim());
@@ -8707,7 +8770,7 @@ body{font-family:'Inter',Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT}
       <div class="mc-sign-label">Authorised Signatory</div>
       <div style="font-size:9px;color:${MUTED};margin-top:1mm;">${escapeHtml(COMPANY.name||'')}</div>
     </div>
-    ${!(COMPANY.stamp && COMPANY.signature)?`<div class="mc-seal">${COMPANY.stamp?`<img src="${COMPANY.stamp}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">`:'Company<br/>Seal'}</div>`:''}
+    ${!(_stamp && _signature)?`<div class="mc-seal">${_stamp?`<img src="${_stamp}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">`:'Company<br/>Seal'}</div>`:''}
     <div style="text-align:right;font-size:9px;color:${MUTED};">
       <div>This is a computer-generated certificate.</div>
     </div>
