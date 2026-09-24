@@ -1161,6 +1161,12 @@
                 <label class="fmt-opt"><input type="radio" name="ch-print-format" value="modern" onchange="challanState.printFormat=this.value;"><span class="fmt-mock fmt-modern"><i></i></span><span class="fmt-name">Modern</span></label>
               </div>
             </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="ch-show-gstin" checked onchange="challanState.showGstin=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show my GSTIN on this challan
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -1284,6 +1290,7 @@
               <label>Certificate Type <span style="color:var(--danger);">*</span></label>
               <select id="cert-type" onchange="certState.certType=this.value;certState.isSaved=false;">
                 <option value="Refilling">Refilling</option>
+                <option value="New Supply">New Supply</option>
                 <option value="H.P Testing">H.P Testing</option>
                 <option value="Installation">Installation</option>
                 <option value="AMC">AMC</option>
@@ -1301,6 +1308,12 @@
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="cert-show-sign-stamp" checked onchange="certState.showSignStamp=this.checked;certState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
                 Show Signature &amp; Stamp on this certificate
+              </label>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="cert-show-gstin" checked onchange="certState.showGstin=this.checked;certState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show my GSTIN on this certificate
               </label>
             </div>
             <div class="form-group">
@@ -1460,6 +1473,12 @@
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="qt-show-sign-stamp" checked onchange="quotState.showSignStamp=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
                 Show Signature &amp; Stamp on this quotation
+              </label>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="qt-show-gstin" checked onchange="quotState.showGstin=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show my GSTIN on this quotation
               </label>
             </div>
           </div>
@@ -1628,6 +1647,12 @@
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="cn-show-sign-stamp" checked onchange="cnState.showSignStamp=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
                 Show Signature &amp; Stamp on this note
+              </label>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="cn-show-gstin" checked onchange="cnState.showGstin=this.checked;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show my GSTIN on this note
               </label>
             </div>
           </div>
@@ -1820,6 +1845,12 @@
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="inv-show-sign-stamp" checked onchange="invState.invoiceMeta.showSignStamp=this.checked;invState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
                 Show Signature &amp; Stamp on this invoice
+              </label>
+            </div>
+            <div class="form-group full">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="inv-show-gstin" checked onchange="invState.invoiceMeta.showGstin=this.checked;invState.isSaved=false;" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"/>
+                Show my GSTIN on this invoice
               </label>
             </div>
           </div>
@@ -2689,7 +2720,7 @@ function escapeForInlineHandler(v){
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let invState = {
-  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'', printFormat:'default', showSignStamp:true },
+  invoiceMeta:{ invoiceNo:'', date:new Date().toISOString().split('T')[0], challanNo:'', printFormat:'default', showSignStamp:true, showGstin:true },
   buyer:{ name:'', address:'', gstin:'', state:'Maharashtra', stateCode:'27', phone:'', email:'' },
   taxes:{ cgst:9, sgst:9, igst:0 },
   lineItems:[], isSaved:false, savedBuyers:[], buyerSearchTimeout:null,
@@ -3210,9 +3241,10 @@ function openNewInvoicePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   // Reset state
-  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:COMPANY.defaultPrintFormat||'default',showSignStamp:COMPANY.showSignStamp!==false};
+  invState.invoiceMeta={invoiceNo:'',date:new Date().toISOString().split('T')[0],challanNo:'',printFormat:COMPANY.defaultPrintFormat||'default',showSignStamp:COMPANY.showSignStamp!==false,showGstin:true};
   syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
   const invSsEl=document.getElementById('inv-show-sign-stamp'); if(invSsEl) invSsEl.checked=invState.invoiceMeta.showSignStamp;
+  const invGstEl=document.getElementById('inv-show-gstin'); if(invGstEl) invGstEl.checked=invState.invoiceMeta.showGstin;
   invState.buyer={name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''};
   invState.taxes={cgst:9,sgst:9,igst:0};
   invState.lineItems=[];invState.isSaved=false;
@@ -4210,7 +4242,7 @@ async function handleSaveToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false, showGstin:invState.invoiceMeta.showGstin!==false
     }
   };
   try{
@@ -4264,7 +4296,7 @@ async function handleUpdateInvoiceToSheets(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
+      items:cleanItems, printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false, showGstin:invState.invoiceMeta.showGstin!==false
     }
   };
   try{
@@ -4299,7 +4331,7 @@ function handlePrint(){
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
     items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
-    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
+    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false, showGstin:invState.invoiceMeta.showGstin!==false
   });
 }
 
@@ -4321,7 +4353,7 @@ async function reprintInvoice(invoiceNo){
       subTotal:inv['Sub Total'], cgstRate:inv['CGST Rate'], sgstRate:inv['SGST Rate'], igstRate:inv['IGST Rate'],
       cgstAmount:inv['CGST Amount'], sgstAmount:inv['SGST Amount'], igstAmount:inv['IGST Amount'],
       grandTotal:inv['Grand Total'], items, printFormat:inv['Print Format']||'default',
-      showSignStamp:inv['Show Sign Stamp']!=='No'
+      showSignStamp:inv['Show Sign Stamp']!=='No', showGstin:inv['Show GSTIN']!=='No'
     });
   }catch(e){showToast('Failed to load invoice for print.','error');}
 }
@@ -4464,7 +4496,7 @@ async function editInvoice(invoiceNo){
     document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
     // Populate state from the saved invoice
-    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||'',printFormat:inv['Print Format']||'default',showSignStamp:inv['Show Sign Stamp']!=='No'};
+    invState.invoiceMeta={invoiceNo:inv['Invoice No']||'',date:toDateInputValue(inv['Date']),challanNo:inv['Challan No']||'',printFormat:inv['Print Format']||'default',showSignStamp:inv['Show Sign Stamp']!=='No',showGstin:inv['Show GSTIN']!=='No'};
     invState.buyer={name:inv['Buyer Name']||'',address:inv['Buyer Address']||'',gstin:inv['Buyer GSTIN']||'',state:inv['Buyer State']||'Maharashtra',stateCode:inv['State Code']||'27',phone:inv['Buyer Phone']||'',email:inv['Buyer Email']||''};
     const cgstRate=parseFloat(inv['CGST Rate']||0), sgstRate=parseFloat(inv['SGST Rate']||0), igstRate=parseFloat(inv['IGST Rate']||0);
     invState.taxes={cgst:cgstRate||9, sgst:sgstRate||9, igst:igstRate||0};
@@ -4476,6 +4508,7 @@ async function editInvoice(invoiceNo){
     document.getElementById('inv-challan').value=invState.invoiceMeta.challanNo;
     syncFmtPicker('inv-print-format',invState.invoiceMeta.printFormat);
     const invSsEl2=document.getElementById('inv-show-sign-stamp'); if(invSsEl2) invSsEl2.checked=invState.invoiceMeta.showSignStamp;
+    const invGstEl2=document.getElementById('inv-show-gstin'); if(invGstEl2) invGstEl2.checked=invState.invoiceMeta.showGstin;
     document.getElementById('inv-gst-type').value=(!cgstRate&&!sgstRate&&!igstRate)?'NO_GST':(igstRate>0?'IGST':'CGST_SGST');
     document.getElementById('buyer-name').value=invState.buyer.name;
     document.getElementById('buyer-address').value=invState.buyer.address;
@@ -4724,6 +4757,12 @@ var LedgerPrint = (function () {
     return typeof data.showSignStamp === 'boolean' ? data.showSignStamp : company.showSignStamp !== false;
   }
 
+  // Show GSTIN — the tenant's own GSTIN on this document, per-document
+  // only (no Company Settings default), defaults to shown.
+  function showGstinFor(data) {
+    return data.showGstin !== false;
+  }
+
   function buildDoc(kind, data, company) {
     DOC = DOCS[kind] || DOCS.invoice;
     company = company || {};
@@ -4793,7 +4832,7 @@ var LedgerPrint = (function () {
     return {
       seller: {
         name: company.name || '', address: company.address || '',
-        gstin: company.gstin || '', state: company.state || '',
+        gstin: showGstinFor(data) ? (company.gstin || '') : '', state: company.state || '',
         stateCode: company.stateCode || '', phone: company.phone || '',
         email: company.email || '', website: company.website || '',
         pan: company.pan || '', logo: company.logo || '',
@@ -5446,7 +5485,7 @@ function numberToWords(price){
 // ── CHALLAN STATE ────────────────────────────────────────────────────────────
 let challanState = {
   challanNo:'', date:new Date().toISOString().split('T')[0],
-  refInvoiceNo:'', transport:'', notes:'', printFormat:'default',
+  refInvoiceNo:'', transport:'', notes:'', printFormat:'default', showGstin:true,
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
   items:[], isSaved:false,
   buyerSearchTimeout:null, editMode:false, originalChallanNo:''
@@ -5465,11 +5504,12 @@ function openNewChallanPage(){
   // Reset state
   challanState={
     challanNo:'', date:new Date().toISOString().split('T')[0],
-    refInvoiceNo:'', transport:'', notes:'', printFormat:COMPANY.defaultPrintFormat||'default',
+    refInvoiceNo:'', transport:'', notes:'', printFormat:COMPANY.defaultPrintFormat||'default', showGstin:true,
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     items:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalChallanNo:''
   };
   syncFmtPicker('ch-print-format',challanState.printFormat);
+  const chGstEl=document.getElementById('ch-show-gstin'); if(chGstEl) chGstEl.checked=challanState.showGstin;
   const ctitle=document.getElementById('challan-page-title');if(ctitle)ctitle.textContent='New Delivery Challan';
   const clbl=document.getElementById('challan-save-btn-label');if(clbl)clbl.textContent='Save Challan';
   const ss=document.getElementById('challan-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
@@ -5648,7 +5688,7 @@ async function handleSaveChallan(){
     buyerGstin:challanState.buyer.gstin||'',
     buyerState:challanState.buyer.state||'Maharashtra',
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:challanState.printFormat||'default'
+    printFormat:challanState.printFormat||'default', showGstin:challanState.showGstin!==false
   };
 
   try{
@@ -5702,7 +5742,7 @@ async function handleUpdateChallanToSheets(){
     buyerGstin:challanState.buyer.gstin||'',
     buyerState:challanState.buyer.state||'Maharashtra',
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:challanState.printFormat||'default'
+    printFormat:challanState.printFormat||'default', showGstin:challanState.showGstin!==false
   };
 
   try{
@@ -5833,7 +5873,7 @@ function handlePrintChallan(){
     buyerState:challanState.buyer.state,
     buyerPhone:challanState.buyer.phone,
     buyerEmail:challanState.buyer.email,
-    items:cleanItems, printFormat:challanState.printFormat||'default'
+    items:cleanItems, printFormat:challanState.printFormat||'default', showGstin:challanState.showGstin!==false
   });
 }
 
@@ -5853,7 +5893,7 @@ async function reprintChallan(challanNo){
       buyerName:ch['Buyer Name'],buyerAddress:ch['Buyer Address'],
       buyerGstin:ch['Buyer GSTIN'],buyerState:ch['Buyer State']||'Maharashtra',
       buyerPhone:ch['Buyer Phone']||'',buyerEmail:ch['Buyer Email']||'',items,
-      printFormat:ch['Print Format']||'default'
+      printFormat:ch['Print Format']||'default', showGstin:ch['Show GSTIN']!=='No'
     });
   }catch(e){showToast('Failed to load challan for print.','error');}
 }
@@ -5922,7 +5962,7 @@ async function editChallan(challanNo){
     challanState={
       challanNo:ch['Challan No']||'', date:toDateInputValue(ch['Date']),
       refInvoiceNo:ch['Ref Invoice No']||'', transport:ch['Transport']||'', notes:ch['Notes']||'',
-      printFormat:ch['Print Format']||'default',
+      printFormat:ch['Print Format']||'default', showGstin:ch['Show GSTIN']!=='No',
       buyer:{name:ch['Buyer Name']||'',address:ch['Buyer Address']||'',gstin:ch['Buyer GSTIN']||'',state:ch['Buyer State']||'Maharashtra',phone:ch['Buyer Phone']||'',email:ch['Buyer Email']||''},
       items:[], isSaved:true, buyerSearchTimeout:null,
       editMode:true, originalChallanNo:ch['Challan No']||''
@@ -5933,6 +5973,7 @@ async function editChallan(challanNo){
     document.getElementById('ch-ref-inv').value=challanState.refInvoiceNo;
     document.getElementById('ch-transport').value=challanState.transport;
     syncFmtPicker('ch-print-format',challanState.printFormat);
+    const chGstEl2=document.getElementById('ch-show-gstin'); if(chGstEl2) chGstEl2.checked=challanState.showGstin;
     document.getElementById('ch-buyer-name').value=challanState.buyer.name;
     document.getElementById('ch-buyer-address').value=challanState.buyer.address;
     document.getElementById('ch-buyer-gstin').value=challanState.buyer.gstin;
@@ -5988,7 +6029,7 @@ function handlePreviewInvoice(){
     subTotal:t.subTotal, cgstRate:t.cgstRate, sgstRate:t.sgstRate, igstRate:t.igstRate,
     cgstAmount:t.cgstAmt, sgstAmount:t.sgstAmt, igstAmount:t.igstAmt, grandTotal:t.grandTotal,
     items:invState.lineItems.map(item=>({desc:item.desc||'',hsn:item.hsn||'',qty:item.qty,rate:item.rate,unit:item.unit||'Nos',amount:(parseFloat(item.qty)||0)*(parseFloat(item.rate)||0)})),
-    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false
+    printFormat:invState.invoiceMeta.printFormat||'default', showSignStamp:invState.invoiceMeta.showSignStamp!==false, showGstin:invState.invoiceMeta.showGstin!==false
   });
 }
 
@@ -6006,14 +6047,14 @@ function handlePreviewChallan(){
     buyerState:challanState.buyer.state,
     buyerPhone:challanState.buyer.phone,
     buyerEmail:challanState.buyer.email,
-    items:cleanItems, printFormat:challanState.printFormat||'default'
+    items:cleanItems, printFormat:challanState.printFormat||'default', showGstin:challanState.showGstin!==false
   });
 }
 
 // ── QUOTATION STATE & HELPERS ─────────────────────────────────────────────────
 let quotState = {
   quotNo:'', date:new Date().toISOString().split('T')[0],
-  validUntil:'', refNo:'', notes:'', printFormat:'default', showSignStamp:true,
+  validUntil:'', refNo:'', notes:'', printFormat:'default', showSignStamp:true, showGstin:true,
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
   lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
 };
@@ -6028,12 +6069,13 @@ function openNewQuotationPage(){
   quotState={
     quotNo:'', date:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', notes:'', printFormat:COMPANY.defaultPrintFormat||'default',
-    showSignStamp:COMPANY.showSignStamp!==false,
+    showSignStamp:COMPANY.showSignStamp!==false, showGstin:true,
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',phone:'',email:''},
     lineItems:[], isSaved:false, buyerSearchTimeout:null, editMode:false, originalQuotNo:''
   };
   syncFmtPicker('qt-print-format',quotState.printFormat);
   const qtSsEl=document.getElementById('qt-show-sign-stamp'); if(qtSsEl) qtSsEl.checked=quotState.showSignStamp;
+  const qtGstEl=document.getElementById('qt-show-gstin'); if(qtGstEl) qtGstEl.checked=quotState.showGstin;
   const ss=document.getElementById('quot-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const qtitle=document.getElementById('quotation-page-title');if(qtitle)qtitle.textContent='New Quotation';
   const qlbl=document.getElementById('quot-save-btn-label');if(qlbl)qlbl.textContent='Save Quotation';
@@ -6267,7 +6309,7 @@ async function handleSaveQuotation(){
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
+    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false, showGstin:quotState.showGstin!==false
   };
 
   try{
@@ -6334,7 +6376,7 @@ async function handleUpdateQuotationToSheets(){
     taxTotal:taxTotal.toFixed(2),
     grandTotal:grandTotal.toFixed(2),
     itemsJson:JSON.stringify(cleanItems),
-    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
+    printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false, showGstin:quotState.showGstin!==false
   };
 
   try{
@@ -6379,7 +6421,7 @@ async function editQuotation(quotNo){
       quotNo:qt['Quotation No']||'', date:toDateInputValue(qt['Date']),
       validUntil:qt['Valid Until']?toDateInputValue(qt['Valid Until']):'',
       refNo:qt['Ref No']||'', notes:qt['Notes']||'', printFormat:qt['Print Format']||'default',
-      showSignStamp:qt['Show Sign Stamp']!=='No',
+      showSignStamp:qt['Show Sign Stamp']!=='No', showGstin:qt['Show GSTIN']!=='No',
       buyer:{name:qt['Buyer Name']||'',address:qt['Buyer Address']||'',gstin:qt['Buyer GSTIN']||'',state:qt['Buyer State']||'Maharashtra',phone:qt['Buyer Phone']||'',email:qt['Buyer Email']||''},
       lineItems:[], isSaved:true, buyerSearchTimeout:null,
       editMode:true, originalQuotNo:qt['Quotation No']||''
@@ -6391,6 +6433,7 @@ async function editQuotation(quotNo){
     document.getElementById('qt-ref-no').value=quotState.refNo;
     syncFmtPicker('qt-print-format',quotState.printFormat);
     const qtSsEl2=document.getElementById('qt-show-sign-stamp'); if(qtSsEl2) qtSsEl2.checked=quotState.showSignStamp;
+    const qtGstEl2=document.getElementById('qt-show-gstin'); if(qtGstEl2) qtGstEl2.checked=quotState.showGstin;
     document.getElementById('qt-buyer-name').value=quotState.buyer.name;
     document.getElementById('qt-buyer-address').value=quotState.buyer.address;
     document.getElementById('qt-buyer-gstin').value=quotState.buyer.gstin;
@@ -6446,7 +6489,7 @@ function handlePreviewQuotation(){
     buyerState:quotState.buyer.state,
     buyerPhone:quotState.buyer.phone,
     buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false, showGstin:quotState.showGstin!==false
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6478,7 +6521,7 @@ function handlePrintQuotation(){
     quotNo:quotState.quotNo,date:quotState.date,validUntil:quotState.validUntil,refNo:quotState.refNo,notes:quotState.notes,
     buyerName:quotState.buyer.name,buyerAddress:quotState.buyer.address,buyerGstin:quotState.buyer.gstin,
     buyerState:quotState.buyer.state,buyerPhone:quotState.buyer.phone,buyerEmail:quotState.buyer.email,
-    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false
+    subTotal,taxTotal,grandTotal,items:cleanItems, printFormat:quotState.printFormat||'default', showSignStamp:quotState.showSignStamp!==false, showGstin:quotState.showGstin!==false
   };
   const htmlContent=buildQuotationHtml(printData);
   const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6618,7 +6661,7 @@ async function reprintQuotation(quotNo){
       buyerPhone:qt['Buyer Phone']||'', buyerEmail:qt['Buyer Email']||'',
       subTotal:parseFloat(qt['Sub Total']||0), taxTotal:parseFloat(qt['Tax Total']||0),
       grandTotal:parseFloat(qt['Grand Total']||0), items, printFormat:qt['Print Format']||'default',
-      showSignStamp:qt['Show Sign Stamp']!=='No'
+      showSignStamp:qt['Show Sign Stamp']!=='No', showGstin:qt['Show GSTIN']!=='No'
     };
     const htmlContent=buildQuotationHtml(printData);
     const old=document.getElementById('_print_frame_quot');if(old)old.parentNode.removeChild(old);
@@ -6677,7 +6720,7 @@ async function onItemDescInput(id,val,type){
 
 let cnState = {
   noteType:'CREDIT', noteNo:'', date:new Date().toISOString().split('T')[0],
-  againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:'default', showSignStamp:true,
+  againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:'default', showSignStamp:true, showGstin:true,
   buyer:{name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''},
   taxes:{cgst:9,sgst:9,igst:0},
   lineItems:[], isSaved:false, buyerSearchTimeout:null
@@ -6696,13 +6739,14 @@ function openNewCreditNotePage(){
   cnState={
     noteType:'CREDIT', noteNo:'', date:new Date().toISOString().split('T')[0],
     againstInvoiceNo:'', againstInvoiceDate:'', reason:'', printFormat:COMPANY.defaultPrintFormat||'default',
-    showSignStamp:COMPANY.showSignStamp!==false,
+    showSignStamp:COMPANY.showSignStamp!==false, showGstin:true,
     buyer:{name:'',address:'',gstin:'',state:'Maharashtra',stateCode:'27',phone:'',email:''},
     taxes:{cgst:9,sgst:9,igst:0},
     lineItems:[], isSaved:false, buyerSearchTimeout:null
   };
   syncFmtPicker('cn-print-format',cnState.printFormat);
   const cnSsEl=document.getElementById('cn-show-sign-stamp'); if(cnSsEl) cnSsEl.checked=cnState.showSignStamp;
+  const cnGstEl=document.getElementById('cn-show-gstin'); if(cnGstEl) cnGstEl.checked=cnState.showGstin;
   const ss=document.getElementById('cn-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
 
   document.getElementById('cn-note-type').value='CREDIT';
@@ -6974,7 +7018,7 @@ async function handleSaveCreditNote(){
       sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
       igstRate:totals.igstRate, igstAmount:totals.igstAmt,
       taxAmount:totals.cgstAmt+totals.sgstAmt+totals.igstAmt, grandTotal:totals.grandTotal,
-      items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
+      items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false, showGstin:cnState.showGstin!==false
     }
   };
 
@@ -7014,7 +7058,7 @@ function handlePreviewCreditNote(){
     subTotal:totals.subTotal, cgstRate:totals.cgstRate, cgstAmount:totals.cgstAmt,
     sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
     igstRate:totals.igstRate, igstAmount:totals.igstAmt,
-    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
+    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false, showGstin:cnState.showGstin!==false
   });
 }
 
@@ -7036,7 +7080,7 @@ function handlePrintCreditNote(){
     subTotal:totals.subTotal, cgstRate:totals.cgstRate, cgstAmount:totals.cgstAmt,
     sgstRate:totals.sgstRate, sgstAmount:totals.sgstAmt,
     igstRate:totals.igstRate, igstAmount:totals.igstAmt,
-    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false
+    grandTotal:totals.grandTotal, items:cleanItems, printFormat:cnState.printFormat||'default', showSignStamp:cnState.showSignStamp!==false, showGstin:cnState.showGstin!==false
   });
 }
 
@@ -7111,7 +7155,7 @@ async function reprintCreditNote(noteNo){
       sgstRate:parseFloat(n['SGST Rate']||0), sgstAmount:parseFloat(n['SGST Amount']||0),
       igstRate:parseFloat(n['IGST Rate']||0), igstAmount:parseFloat(n['IGST Amount']||0),
       grandTotal:parseFloat(n['Grand Total']||0), items, printFormat:n['Print Format']||'default',
-      showSignStamp:n['Show Sign Stamp']!=='No'
+      showSignStamp:n['Show Sign Stamp']!=='No', showGstin:n['Show GSTIN']!=='No'
     });
   }catch(e){showToast('Could not load note.','error');}
 }
@@ -7659,7 +7703,7 @@ function loadDashboardAMC(){
 
 // ── CERTIFICATE STATE ────────────────────────────────────────────────────────
 let certState = {
-  certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:true,
+  certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:true, showGstin:true,
   issueDate:new Date().toISOString().split('T')[0],
   validUntil:'', refNo:'', site:'', remarks:'',
   recipient:{name:'',address:'',phone:'',email:'',gstin:''},
@@ -7675,7 +7719,7 @@ function openNewCertificatePage(){
   document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('page-hidden'));
 
   certState={
-    certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:COMPANY.showSignStamp!==false,
+    certNo:'', certType:'Refilling', certFormat:'default', showSignStamp:COMPANY.showSignStamp!==false, showGstin:true,
     issueDate:new Date().toISOString().split('T')[0],
     validUntil:'', refNo:'', site:'', remarks:'',
     recipient:{name:'',address:'',phone:'',email:'',gstin:''},
@@ -7684,6 +7728,7 @@ function openNewCertificatePage(){
   };
   syncFmtPicker('cert-format','default');
   const certSsEl=document.getElementById('cert-show-sign-stamp'); if(certSsEl) certSsEl.checked=certState.showSignStamp;
+  const certGstEl=document.getElementById('cert-show-gstin'); if(certGstEl) certGstEl.checked=certState.showGstin;
   toggleCertFormatColumns();
   const ss=document.getElementById('cert-save-status');if(ss){ss.textContent='● Unsaved';ss.style.color='var(--text3)';}
   const tl=document.getElementById('cert-page-title');if(tl)tl.textContent='New Certificate';
@@ -7877,7 +7922,7 @@ async function handleSaveCertificate(){
     username:sessionStorage.getItem('gme_username')||'Unknown',
     certNo,
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false, showGstin:certState.showGstin!==false,
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7935,7 +7980,7 @@ async function handleUpdateCertificateToSheets(){
     originalCertNo:certState.originalCertNo,
     certNo,
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false, showGstin:certState.showGstin!==false,
     issueDate:document.getElementById('cert-issue-date').value||'',
     validUntil:document.getElementById('cert-valid-until').value||'',
     refNo:document.getElementById('cert-ref-no').value.trim()||'',
@@ -7986,7 +8031,7 @@ async function editCertificate(certNo){
 
     certState={
       certNo:c['Cert No']||'', certType:c['Cert Type']||'Refilling', certFormat:c['Certificate Format']||'default',
-      showSignStamp:c['Show Sign Stamp']!=='No',
+      showSignStamp:c['Show Sign Stamp']!=='No', showGstin:c['Show GSTIN']!=='No',
       issueDate:toDateInputValue(c['Issue Date']),
       validUntil:c['Valid Until']?toDateInputValue(c['Valid Until']):'',
       refNo:c['Ref No']||'', site:c['Site']||'', remarks:c['Remarks']||'',
@@ -8000,6 +8045,7 @@ async function editCertificate(certNo){
     document.getElementById('cert-type').value=certState.certType;
     syncFmtPicker('cert-format',certState.certFormat);
     const certSsEl2=document.getElementById('cert-show-sign-stamp'); if(certSsEl2) certSsEl2.checked=certState.showSignStamp;
+    const certGstEl2=document.getElementById('cert-show-gstin'); if(certGstEl2) certGstEl2.checked=certState.showGstin;
     document.getElementById('cert-issue-date').value=certState.issueDate;
     document.getElementById('cert-valid-until').value=certState.validUntil;
     document.getElementById('cert-ref-no').value=certState.refNo;
@@ -8317,7 +8363,7 @@ function handlePrintCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim(),
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false, showGstin:certState.showGstin!==false,
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -8336,7 +8382,7 @@ function handlePreviewCertificate(){
   printCertificateHtml({
     certNo:document.getElementById('cert-no').value.trim()||'PREVIEW',
     certType:document.getElementById('cert-type').value,
-    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false,
+    certFormat:certState.certFormat||'default', showSignStamp:certState.showSignStamp!==false, showGstin:certState.showGstin!==false,
     issueDate:document.getElementById('cert-issue-date').value,
     validUntil:document.getElementById('cert-valid-until').value,
     refNo:document.getElementById('cert-ref-no').value.trim(),
@@ -8364,7 +8410,7 @@ async function reprintCertificate(certNo){
     try{items=JSON.parse(c['Items (JSON)']||'[]');}catch(e){items=[];}
     printCertificateHtml({
       certNo:c['Cert No'],certType:c['Cert Type']||'',
-      certFormat:c['Certificate Format']||'default', showSignStamp:c['Show Sign Stamp']!=='No',
+      certFormat:c['Certificate Format']||'default', showSignStamp:c['Show Sign Stamp']!=='No', showGstin:c['Show GSTIN']!=='No',
       issueDate:c['Issue Date'],validUntil:c['Valid Until']||'',
       refNo:c['Ref No']||'',site:c['Site']||'',
       items:items,remarks:c['Remarks']||'',
@@ -8412,6 +8458,7 @@ function buildDefaultCertHtml(data){
   const _showSignStamp = typeof data.showSignStamp==='boolean' ? data.showSignStamp : COMPANY.showSignStamp!==false;
   const _stamp = _showSignStamp ? (COMPANY.stamp||'') : '';
   const _signature = _showSignStamp ? (COMPANY.signature||'') : '';
+  const _gstin = data.showGstin!==false ? (COMPANY.gstin||'') : '';
   const fmtD=fmtDMY(data.issueDate);
   const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
 
@@ -8462,8 +8509,8 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 .cert-items-table td{border:1px solid #ddd;padding:2mm 3mm;color:#222;vertical-align:top;}
 .cert-issued-to{text-align:center;margin:5mm 0;}
 .cert-issued-label{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:0.5px;}
-.cert-recipient{font-size:16px;font-weight:bold;color:#2A2660;margin:2mm 0;text-transform:uppercase;}
-.cert-recipient-addr{font-size:10px;color:#444;}
+.cert-recipient{font-size:26px;font-weight:bold;color:#2A2660;margin:2mm 0;text-transform:uppercase;}
+.cert-recipient-addr{font-size:14px;color:#444;}
 .cert-meta{display:flex;justify-content:space-between;margin:4mm 0;font-size:10px;}
 .cert-meta-item{text-align:center;}
 .cert-meta-label{color:#777;text-transform:uppercase;letter-spacing:0.4px;font-size:9px;}
@@ -8483,7 +8530,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
     <div class="cert-header-text">
       <div class="cert-company">${escapeHtml(COMPANY.name)}</div>
       <div class="cert-company-sub">${escapeHtml(COMPANY.address)}</div>
-      <div class="cert-company-sub">Ph: ${escapeHtml(COMPANY.phone)} &nbsp;|&nbsp; GSTIN: ${escapeHtml(COMPANY.gstin)}</div>
+      <div class="cert-company-sub">Ph: ${escapeHtml(COMPANY.phone)}${_gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(_gstin):''}</div>
       <div class="cert-title">Certificate</div>
       <div class="cert-type">${escapeHtml(data.certType||'Refilling')}</div>
     </div>
@@ -8596,8 +8643,8 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 .hz-title{font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:900;text-decoration:underline;letter-spacing:1px;color:#111;}
 .hz-report-no{font-size:10px;color:#333;margin-top:1mm;}
 .hz-date{font-size:12px;font-weight:bold;color:#111;white-space:nowrap;}
-.hz-client{font-size:21px;font-weight:900;color:#111;margin-bottom:2mm;text-transform:uppercase;-webkit-text-stroke:0.3px #111;}
-.hz-address{font-size:11px;font-weight:bold;color:#222;line-height:1.6;margin-bottom:5mm;}
+.hz-client{font-size:26px;font-weight:900;color:#111;margin-bottom:2mm;text-transform:uppercase;-webkit-text-stroke:0.3px #111;}
+.hz-address{font-size:14px;font-weight:bold;color:#222;line-height:1.6;margin-bottom:5mm;}
 .hz-warranty{font-size:11px;font-weight:bold;color:#111;text-align:center;line-height:1.6;margin-bottom:5mm;}
 .hz-items{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:4mm;}
 .hz-items th{border:1px solid #111;padding:2mm;background:#fceceb;color:#111;font-size:9px;text-transform:uppercase;}
@@ -8670,6 +8717,7 @@ function buildModernCertHtml(data){
   const _showSignStamp = typeof data.showSignStamp==='boolean' ? data.showSignStamp : COMPANY.showSignStamp!==false;
   const _stamp = _showSignStamp ? (COMPANY.stamp||'') : '';
   const _signature = _showSignStamp ? (COMPANY.signature||'') : '';
+  const _gstin = data.showGstin!==false ? (COMPANY.gstin||'') : '';
   const ACCENT='#4338CA', ACCENT_TINT='#EEF2FF', LINE='#E5E7EB', TEXT='#1F2937', MUTED='#6B7280';
   const fmtD=fmtDMY(data.issueDate);
   const fmtV=data.validUntil?fmtDMY(data.validUntil):null;
@@ -8717,8 +8765,8 @@ body{font-family:'Inter',Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT}
 .mc-body{flex:1;}
 .mc-issued{text-align:center;margin:6mm 0;}
 .mc-issued-label{font-size:9px;color:${MUTED};text-transform:uppercase;letter-spacing:1px;}
-.mc-recipient{font-size:22px;font-weight:800;color:${ACCENT};margin:2mm 0;}
-.mc-recipient-addr{font-size:10px;color:${MUTED};}
+.mc-recipient{font-size:26px;font-weight:800;color:${ACCENT};margin:2mm 0;}
+.mc-recipient-addr{font-size:14px;color:${MUTED};}
 .mc-chips{display:flex;justify-content:center;gap:4mm;flex-wrap:wrap;margin:5mm 0;}
 .mc-chip{background:${ACCENT_TINT};border-radius:2mm;padding:2mm 4mm;text-align:center;min-width:28mm;}
 .mc-chip-l{font-size:7.5px;color:${ACCENT};text-transform:uppercase;letter-spacing:.5px;}
@@ -8739,7 +8787,7 @@ body{font-family:'Inter',Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT}
       ${COMPANY.logo?`<div class="mc-logo"><img src="${COMPANY.logo}"></div>`:''}
       <div><div class="mc-company">${escapeHtml(COMPANY.name||'')}</div>
         <div class="mc-company-sub">${escapeHtml(COMPANY.address||'')}</div>
-        <div class="mc-company-sub">Ph: ${escapeHtml(COMPANY.phone||'')}${COMPANY.gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(COMPANY.gstin):''}</div>
+        <div class="mc-company-sub">Ph: ${escapeHtml(COMPANY.phone||'')}${_gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(_gstin):''}</div>
       </div>
     </div>
     <div class="mc-badge"><div class="mc-badge-title">Certificate</div>
