@@ -8531,7 +8531,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
       <div class="cert-company">${escapeHtml(COMPANY.name)}</div>
       <div class="cert-company-sub">${escapeHtml(COMPANY.address)}</div>
       <div class="cert-company-sub">Ph: ${escapeHtml(COMPANY.phone)}${_gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(_gstin):''}</div>
-      <div class="cert-title">Certificate</div>
+      <div class="cert-title" style="font-family:'Old English Text MT',serif;">Certificate</div>
       <div class="cert-type">${escapeHtml(data.certType||'Refilling')}</div>
     </div>
     ${COMPANY.logo?`<div class="cert-header-logo" style="visibility:hidden;"></div>`:''}
@@ -8672,7 +8672,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000;background
 
     <div class="hz-title-row">
       <div>
-        <div class="hz-title">Certificate</div>
+        <div class="hz-title" style="font-family:'Old English Text MT',serif;">Certificate</div>
         <div class="hz-report-no">Report No. ${escapeHtml(data.certNo)||'-'}</div>
       </div>
       <div class="hz-date">DATE:- ${fmtD}</div>
@@ -8790,7 +8790,7 @@ body{font-family:'Inter',Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT}
         <div class="mc-company-sub">Ph: ${escapeHtml(COMPANY.phone||'')}${_gstin?' &nbsp;|&nbsp; GSTIN: '+escapeHtml(_gstin):''}</div>
       </div>
     </div>
-    <div class="mc-badge"><div class="mc-badge-title">Certificate</div>
+    <div class="mc-badge"><div class="mc-badge-title" style="font-family:'Old English Text MT',serif;">Certificate</div>
       <div class="mc-badge-no">No. ${escapeHtml(data.certNo||'-')} &middot; ${escapeHtml(data.certType||'Refilling')}</div>
     </div>
   </div>
