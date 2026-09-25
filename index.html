@@ -8485,6 +8485,8 @@ function buildDefaultCertHtml(data){
   const hasItemRemarks=certItems.some(it=>(it.remarks||'').toString().trim());
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet">
 <style>
 @page{size:A4 portrait;margin:0;}
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
@@ -8624,7 +8626,7 @@ function buildHorizonCertHtml(data){
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
 <style>
 @page{size:A4 portrait;margin:0;}
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
@@ -8747,7 +8749,7 @@ function buildModernCertHtml(data){
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
 <style>
 @page{size:A4 portrait;margin:0;}
 html,body{margin:0;padding:0;width:210mm;height:297mm;overflow:hidden;}
