@@ -2334,11 +2334,13 @@
         <div class="card-header"><div class="card-title">Business Profile</div></div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group"><label>Business Name</label><input type="text" id="settings-name" value="" readonly/></div>
-            <div class="form-group"><label>GSTIN</label><input type="text" id="settings-gstin" value="" readonly/></div>
-            <div class="form-group full"><label>Address</label><textarea rows="2" id="settings-address" readonly></textarea></div>
-            <div class="form-group"><label>Phone</label><input type="text" id="settings-phone" value="" readonly/></div>
-            <div class="form-group"><label>State</label><input type="text" id="settings-state" value="" readonly/></div>
+            <div class="form-group"><label>Business Name</label><input type="text" id="settings-name" value="" oninput="COMPANY.name=this.value;"/></div>
+            <div class="form-group"><label>GSTIN</label><input type="text" id="settings-gstin" value="" oninput="COMPANY.gstin=this.value;"/></div>
+            <div class="form-group full"><label>Address</label><textarea rows="2" id="settings-address" oninput="COMPANY.address=this.value;"></textarea></div>
+            <div class="form-group"><label>Phone</label><input type="text" id="settings-phone" value="" oninput="COMPANY.phone=this.value;"/></div>
+            <div class="form-group"><label>State</label><input type="text" id="settings-state" value="" oninput="COMPANY.state=this.value;"/></div>
+            <div class="form-group"><label>Website</label><input type="text" id="settings-website" value="" placeholder="www.example.com" oninput="COMPANY.website=this.value;"/></div>
+            <div class="form-group"><label>Email</label><input type="email" id="settings-email" value="" placeholder="info@example.com" oninput="COMPANY.email=this.value;"/></div>
           </div>
         </div>
       </div>
@@ -2794,7 +2796,8 @@ function applyCompanyToUI(){
   const sc=document.getElementById('sidebar-company'); if(sc) sc.textContent=COMPANY.name||'—';
   const map={
     'settings-name':COMPANY.name,'settings-gstin':COMPANY.gstin,'settings-phone':COMPANY.phone,
-    'settings-bank':COMPANY.bank,'settings-acctno':COMPANY.acctNo,'settings-ifsc':COMPANY.ifsc,'settings-upi':COMPANY.upi
+    'settings-bank':COMPANY.bank,'settings-acctno':COMPANY.acctNo,'settings-ifsc':COMPANY.ifsc,'settings-upi':COMPANY.upi,
+    'settings-website':COMPANY.website,'settings-email':COMPANY.email
   };
   Object.keys(map).forEach(id=>{const el=document.getElementById(id); if(el) el.value=map[id]||'';});
   const addr=document.getElementById('settings-address'); if(addr) addr.value=COMPANY.address||'';
