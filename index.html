@@ -2873,7 +2873,7 @@ function saveCalendarSettings(){
 // ── DATA EXPORT ──────────────────────────────────────────────────────────────
 function exportMyData(){
   showToast('Preparing your data export...','info');
-  gasPost('exportMyData',{}).then(d=>{
+  gasPostAMC('exportMyData',{}).then(d=>{
     if(d.success){
       const link=document.createElement('a');
       link.href='data:'+d.mimeType+';base64,'+d.data;
