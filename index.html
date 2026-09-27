@@ -2462,6 +2462,18 @@
           <button class="btn btn-primary" id="settings-calendar-save-btn" onclick="saveCalendarSettings()">Save</button>
         </div>
       </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header"><div class="card-title">Export Data</div></div>
+        <div class="modal-body">
+          <div style="margin-bottom:12px;color:var(--text2);font-size:13px;">
+            Download all your business data (Invoices, Buyers, Items, Quotations, Challans, Certificates, AMC Contracts, Credit/Debit Notes) as an Excel file for backup or offline analysis.
+          </div>
+          <button class="btn btn-secondary" onclick="exportMyData()" style="width:100%;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export My Data to Excel
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2855,6 +2867,25 @@ function saveCalendarSettings(){
   }).catch(()=>{
     btn.disabled=false; btn.textContent='Save';
     showToast('Save failed — check connection.','error');
+  });
+}
+
+// ── DATA EXPORT ──────────────────────────────────────────────────────────────
+function exportMyData(){
+  showToast('Preparing your data export...','info');
+  gasPost('exportMyData',{}).then(d=>{
+    if(d.success){
+      const link=document.createElement('a');
+      link.href='data:'+d.mimeType+';base64,'+d.data;
+      link.download=d.fileName;
+      link.click();
+      showToast('Data exported successfully!','success');
+    } else {
+      showToast(d.error||'Export failed.','error');
+    }
+  }).catch(err=>{
+    console.error('Export error:',err);
+    showToast('Export failed — check connection.','error');
   });
 }
 

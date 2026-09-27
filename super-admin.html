@@ -101,7 +101,13 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">Tenants</div>
-      <button class="btn btn-primary" onclick="openAddTenant()">+ Add New Tenant</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="exportAllTenantsData()" title="Export all tenants and users list">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export All Tenants
+        </button>
+        <button class="btn btn-primary" onclick="openAddTenant()">+ Add New Tenant</button>
+      </div>
     </div>
     <div class="table-scroll">
       <table>
@@ -331,6 +337,7 @@ function renderTenants(list){
       <td class="muted">${escapeHtml(t['Phone']||t['Email'])||'-'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-sm" onclick="openUsersForTenant('${safeId}','${safeName}')">Users</button>
+        <button class="btn btn-sm" style="margin-left:4px;" onclick="exportTenantData('${safeId}')">Export</button>
         <button class="btn btn-sm" style="margin-left:4px;" onclick="openEditTenant(${idx})">Edit</button>
         <button class="btn btn-sm btn-danger" style="margin-left:4px;" onclick="confirmDeleteTenant('${safeId}')">Delete</button>
       </td>
@@ -459,6 +466,45 @@ function confirmDeleteTenant(tenantId){
       showToast(d.message||'Delete failed.','error');
     }
   }).catch(()=>showToast('Delete failed — check connection.','error'));
+}
+
+// ── DATA EXPORT ──────────────────────────────────────────────────────────────
+function exportTenantData(tenantId){
+  const t=liveTenants.find(x=>(x['Tenant ID']||'')===tenantId);
+  const name=t?(t['Company Name']||tenantId):tenantId;
+  showToast('Preparing export for '+name+'...','info');
+  gasPost('exportTenantData', {tenantId}).then(d=>{
+    if(d.success){
+      const link=document.createElement('a');
+      link.href='data:'+d.mimeType+';base64,'+d.data;
+      link.download=d.fileName;
+      link.click();
+      showToast('Data exported successfully!','success');
+    } else {
+      showToast(d.error||'Export failed.','error');
+    }
+  }).catch(err=>{
+    console.error('Export error:',err);
+    showToast('Export failed — check connection.','error');
+  });
+}
+
+function exportAllTenantsData(){
+  showToast('Preparing all tenants export...','info');
+  gasPost('exportAllTenants', {}).then(d=>{
+    if(d.success){
+      const link=document.createElement('a');
+      link.href='data:'+d.mimeType+';base64,'+d.data;
+      link.download=d.fileName;
+      link.click();
+      showToast('All tenants data exported successfully!','success');
+    } else {
+      showToast(d.error||'Export failed.','error');
+    }
+  }).catch(err=>{
+    console.error('Export error:',err);
+    showToast('Export failed — check connection.','error');
+  });
 }
 
 // ── USER-LEVEL MANAGEMENT (within one tenant) ───────────────────────────────
