@@ -255,6 +255,18 @@ Only the "stamp AND signature both present" branch was touched — the "only one
 
 **Not yet verified live** — needs a redeploy (backend) + the frontend push to actually take effect; the local render test above only proves the HTML/CSS is correct, not that it looks right in a real Puppeteer-generated PDF or an actual browser print. Confirm by regenerating a WhatsApp PDF (or Print/Preview) for a tenant that has both a stamp and signature uploaded in Company Settings.
 
+### Quotation layout fix: Full-width notes section (2026-09-30)
+
+Quotations were leaving blank space in the bottom-left area where bank details appear on invoices/challans — user provided screenshot showing the empty area marked in red. Bank details are irrelevant for quotations (nothing's being paid yet), but the space was just empty instead of being used productively.
+
+**Fix: full-width "Notes / Terms" section for quotations only.** Modified `bankBlock()` in both engines to detect `inv.kind === 'quotation'` and render a special layout: skip the bank column entirely, render notes/terms in a new `.terms-full` CSS class that spans the combined space of what would normally be bank + terms columns side-by-side. Invoices/challans/credit-debit-notes unchanged — they keep the original three-column layout (bank details | terms | signature).
+
+**Four places changed** (same two-engine sync pattern as every other print feature):
+- `backend/src/lib/ledgerPrint.js` (`bankBlock()`) + `index.html`'s matching `bankBlock()` — HTML structure change (conditional branch for quotations).
+- `backend/src/lib/ledgerPrint.js` PAGE_STYLE + PAGE_STYLE_MODERN + `index.html`'s matching PAGE_STYLE + PAGE_STYLE_MODERN — added `.inv-bank .terms-full{flex:1;...}` CSS rule mirroring `.inv-bank .terms` but applied to the new full-width layout.
+
+**Verified working** (2026-09-30): Tested locally with browser print preview — quotation now shows full-width notes section, no blank space. Both classic and modern print formats support the new layout.
+
 ### TODO now that cutover has happened
 
 1. ~~Redeploy with `ALLOWED_ORIGIN=https://gulmohammedansari.github.io`~~ — done.
